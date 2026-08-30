@@ -1,0 +1,3356 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UK Retirement Planner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace']
+          },
+          colors: {
+            ink: { 950: '#0b1220', 900: '#111827', 700: '#1f2937' }
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    body {
+      background: linear-gradient(180deg, #e6edf5 0%, #f3f5f7 18rem) fixed;
+      color: #0f172a;
+    }
+    header.app-bar {
+      background: #0b1220;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      box-shadow: inset 0 3px 0 #b45309;
+    }
+    main .rounded-xl.border.bg-white {
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 36px -18px rgba(15, 23, 42, 0.18);
+    }
+    .print-only { display: none; }
+    #importPlanFile { display: none; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+    .field {
+      width: 100%;
+      border-radius: 0.375rem;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      padding: 0.5rem 0.65rem;
+      font-size: 1rem;
+      color: #0f172a;
+      outline: none;
+      direction: ltr;
+      unicode-bidi: isolate;
+      text-align: left;
+    }
+    .field:focus { border-color: #334155; box-shadow: 0 0 0 1px #334155; }
+    .lbl {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      text-transform: none;
+      color: #334155;
+      margin-bottom: 0.3rem;
+    }
+    .section-kicker {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .sticky-actions {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 40;
+      border-top: 1px solid #e2e8f0;
+      background: rgba(255, 255, 255, 0.97);
+      box-shadow: 0 -10px 28px rgba(15, 23, 42, 0.1);
+      padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom));
+    }
+    body.has-sticky-actions { padding-bottom: 6.5rem; }
+    .sim-banner {
+      border-radius: 0.75rem;
+      border: 1px solid #f1d4a3;
+      background: #fffbeb;
+      padding: 0.9rem 1rem;
+    }
+    .kpi-value { font-variant-numeric: tabular-nums; }
+    .cashflow-table { font-variant-numeric: tabular-nums; }
+    .cashflow-table th {
+      position: sticky;
+      top: 0;
+      background: #f8fafc;
+      z-index: 1;
+      box-shadow: inset 0 -1px 0 #e2e8f0;
+    }
+    .modal-hidden { display: none; }
+    .page-hidden { display: none; }
+    .help-prose h3 { font-size: 0.875rem; font-weight: 600; color: #0f172a; margin-top: 1.25rem; }
+    .help-prose h3:first-child { margin-top: 0; }
+    .help-prose h4 { font-size: 0.8125rem; font-weight: 600; color: #0f172a; margin-top: 0.85rem; }
+    .help-prose p { font-size: 0.8125rem; color: #475569; line-height: 1.65; margin-top: 0.45rem; }
+    .help-prose ul, .help-prose ol { font-size: 0.8125rem; color: #475569; line-height: 1.6; margin: 0.4rem 0 0 1.1rem; }
+    .help-prose ul { list-style: disc; }
+    .help-prose ol { list-style: decimal; }
+    .help-prose li { margin-top: 0.2rem; }
+    .help-prose strong { color: #334155; font-weight: 600; }
+    .help-tip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1rem;
+      height: 1rem;
+      margin-left: 0.3rem;
+      border-radius: 999px;
+      border: 1px solid #94a3b8;
+      background: #fff;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0;
+      text-transform: none;
+      vertical-align: 1px;
+      cursor: help;
+    }
+    .help-tip:hover,
+    .help-tip[aria-expanded="true"] {
+      border-color: #334155;
+      color: #0f172a;
+      background: #f8fafc;
+    }
+    #navTitle {
+      background: none;
+      border: 0;
+      padding: 0;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      text-align: left;
+    }
+    .field-help-pop {
+      position: absolute;
+      z-index: 60;
+      max-width: 18.5rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 0.5rem;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+      font-size: 0.75rem;
+      line-height: 1.45;
+      color: #334155;
+    }
+    @media print {
+      @page { size: A4; margin: 12mm 11mm; }
+      html, body {
+        background: #fff !important;
+        color: #000 !important;
+      }
+      body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .no-print, .help-tip, .field-help-pop, #pageStart, #pageInputs,
+      #helpModal, #marketModal, header.app-bar, .sticky-actions { display: none !important; }
+      body.has-sticky-actions { padding-bottom: 0 !important; }
+      #pageResults {
+        display: block !important;
+        max-width: none !important;
+        padding: 0 !important;
+        color: #000 !important;
+        font-size: 11pt;
+        line-height: 1.4;
+      }
+      #pageResults[hidden] { display: block !important; }
+      #pageResults, #pageResults * { color: #000 !important; }
+      #pageResults .text-\[11px\],
+      #pageResults .text-xs {
+        font-size: 10pt !important;
+        line-height: 1.35 !important;
+        letter-spacing: 0.01em !important;
+      }
+      #pageResults .text-sm { font-size: 11pt !important; }
+      #pageResults h2 { font-size: 14pt !important; font-weight: 700 !important; }
+      #pageResults h3 { font-size: 11pt !important; font-weight: 700 !important; }
+      #pageResults .text-xl { font-size: 16pt !important; }
+      #pageResults .text-2xl { font-size: 16pt !important; }
+      #pageResults .text-3xl,
+      #pageResults .kpi-value.text-3xl { font-size: 18pt !important; }
+      #pageResults .print-only p { font-size: 10pt !important; }
+      #pageResults .print-only h2 { font-size: 16pt !important; }
+      #cashflowTableWrap { max-height: none !important; overflow: visible !important; }
+      .cashflow-table {
+        min-width: 0 !important;
+        font-size: 9pt !important;
+        color: #000 !important;
+      }
+      .cashflow-table th,
+      .cashflow-table td { color: #000 !important; }
+      .cashflow-table th {
+        background: #fff !important;
+        box-shadow: inset 0 -1px 0 #000;
+      }
+      .chart-frame { height: 260px !important; break-inside: avoid; }
+      .print-only { display: block !important; }
+      main .rounded-xl { break-inside: avoid; box-shadow: none !important; }
+      footer { border-top: 1px solid #000; }
+    }
+  </style>
+</head>
+<body class="min-h-screen font-sans text-slate-900 antialiased">
+  <header class="app-bar border-b border-slate-200 bg-ink-950 text-white">
+    <div class="mx-auto flex max-w-[1600px] flex-wrap items-end justify-between gap-3 px-4 py-5 sm:px-6">
+      <div>
+        <p class="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">England / Wales / NI · Tax year 2026/27 bands</p>
+        <h1 class="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">
+          <button id="navTitle" type="button" class="text-left hover:text-slate-200">UK Retirement Planner</button>
+        </h1>
+      </div>
+      <div class="flex flex-wrap items-center justify-end gap-2 no-print">
+        <nav class="flex rounded-lg border border-slate-600 p-0.5" aria-label="Planner sections">
+          <button id="navStart" type="button" class="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-ink-950">
+            Start
+          </button>
+          <button id="navInputs" type="button" class="rounded-md px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white">
+            Inputs
+          </button>
+          <button id="navResults" type="button" class="rounded-md px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white">
+            Results
+          </button>
+        </nav>
+        <button id="marketHistBtn" type="button" class="rounded-md border border-slate-600 bg-ink-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-ink-700">
+          Market history 1900–2022
+        </button>
+        <button id="helpBtn" type="button" class="rounded-md border border-slate-500 bg-transparent px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-white/10">
+          Help &amp; method
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto px-4 py-6 sm:px-6">
+    <!-- PAGE: start -->
+    <section id="pageStart" class="mx-auto max-w-3xl space-y-5">
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+        <p class="section-kicker">Welcome</p>
+          <h2 class="mt-1 text-2xl font-semibold tracking-tight text-ink-900">Plan a UK retirement in today’s pounds</h2>
+        <p class="mt-3 text-sm leading-relaxed text-slate-600">
+          Educational planner for England, Wales or Northern Ireland. Enter a
+          <span class="font-medium text-slate-800">net withdrawal</span> (what you want left after income tax each year),
+          pots and pensions. The model then tests whether those pots can fund that withdrawal to your horizon.
+        </p>
+        <p class="mt-3 text-sm leading-relaxed text-slate-600">
+          Not personalised or regulated financial advice. Figures are illustrative, using simplified 2026/27 rUK tax bands.
+        </p>
+        <ol class="mt-5 space-y-2 text-sm text-slate-700">
+          <li class="flex gap-3"><span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink-950 text-[11px] font-semibold text-white">1</span> Enter ages, withdrawal, pots and pensions on Inputs.</li>
+          <li class="flex gap-3"><span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink-950 text-[11px] font-semibold text-white">2</span> Replay historical markets from 1900, or run a Monte Carlo simulation, from the bar at the bottom.</li>
+          <li class="flex gap-3"><span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink-950 text-[11px] font-semibold text-white">3</span> Read success rate, age snapshots and the year-by-year table on Results.</li>
+        </ol>
+        <div class="mt-6">
+          <a href="#inputs" id="startToInputs" class="inline-flex rounded-lg bg-ink-950 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-ink-700">
+            Continue to Inputs
+          </a>
+        </div>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button type="button" data-export-plan class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Save plan file</button>
+          <button type="button" data-import-plan class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Restore plan file</button>
+        </div>
+        <p id="startPlanMeta" class="mt-3 text-xs text-slate-500">No saved plan in this browser yet.</p>
+        <p id="fileIoStatus" class="mt-1 text-xs text-slate-500"></p>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 class="text-sm font-semibold text-slate-900">How the simulations work</h3>
+        <p class="mt-2 text-sm leading-relaxed text-slate-600">
+          The planner does not pick one future. After you enter a plan, you run a test.
+          Both tests take guaranteed income first, then draw from your pots in the order you chose, apply simplified UK tax, and grow what is left — year by year, in today’s pounds — to see whether the money lasts to your horizon.
+        </p>
+        <h4 class="mt-4 text-sm font-semibold text-slate-900">Replay historical markets</h4>
+        <p class="mt-1.5 text-sm leading-relaxed text-slate-600">
+          This is the usual starting point. It uses real US large-cap returns from
+          <span class="font-medium text-slate-800">1900 through 2022</span>
+          (you can start later on Inputs, for example 1950, to skip earlier crises).
+          Years are not shuffled. The model walks every overlapping stretch of
+          <span class="font-medium text-slate-800">consecutive</span> years that is as long as your plan.
+          A 33-year plan is tested as 1900–1932, then 1901–1933, and so on.
+          Each stretch is one retirement path, with your withdrawals and tax applied every year.
+          From those paths you get a success rate, a median pot, and a best / worst range.
+        </p>
+        <h4 class="mt-4 text-sm font-semibold text-slate-900">Monte Carlo (GBM)</h4>
+        <p class="mt-1.5 text-sm leading-relaxed text-slate-600">
+          Instead of history, this draws 1,000 random year-by-year paths from the
+          <span class="font-medium text-slate-800">expected return</span> and
+          <span class="font-medium text-slate-800">volatility</span> you type on Inputs.
+          Those paths are not calendar years. Use this when you want a statistical test around your own return assumption, rather than what markets actually did.
+        </p>
+        <p class="mt-3 text-sm leading-relaxed text-slate-500">
+          Help &amp; method has a How to use guide, plus a Method tab for tax, data and how the numbers are built.
+        </p>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 class="text-sm font-semibold text-slate-900">Where your numbers live</h3>
+        <p class="mt-2 text-sm leading-relaxed text-slate-600">
+          Nothing is sent to a server. Your plan stays on this device in the browser.
+          Use <span class="font-medium text-slate-800">Save plan file</span> for a private backup you can restore later.
+        </p>
+      </div>
+    </section>
+
+    <!-- PAGE: inputs -->
+    <section id="pageInputs" class="page-hidden mx-auto max-w-4xl space-y-5" hidden inert aria-hidden="true">
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <h2 class="text-base font-semibold text-slate-900">Your plan</h2>
+        <p class="mt-1 text-sm text-slate-600">Net withdrawal is after tax, in today’s pounds. Returns you type are nominal; the engine converts them to real using inflation.</p>
+        <p class="section-kicker mt-4">Ages</p>
+        <div class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div class="block">
+            <div class="lbl"><label for="currentAge">Current age</label> <button type="button" class="help-tip" data-help="Your age today. The projection starts from this year." aria-label="About current age">?</button></div>
+            <input id="currentAge" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="55" />
+          </div>
+          <div class="block">
+            <div class="lbl"><label for="retireAge">Retirement age</label> <button type="button" class="help-tip" data-help="First year the plan draws from pots to fund your net withdrawal. If this is at or below your current age, withdrawals start immediately." aria-label="About retirement age">?</button></div>
+            <input id="retireAge" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="67" />
+          </div>
+          <div class="block col-span-2 sm:col-span-1">
+            <div class="lbl"><label for="horizonAge">Horizon age</label> <button type="button" class="help-tip" data-help="Last age modelled. Success means the portfolio is still above £0 at this age." aria-label="About horizon age">?</button></div>
+            <input id="horizonAge" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="100" />
+          </div>
+        </div>
+        <p id="planHint" class="mt-2 text-sm text-slate-600">Withdrawals start at retirement age. The plan runs to the horizon age.</p>
+        <p class="section-kicker mt-5">Spending</p>
+        <div class="mt-2 grid grid-cols-2 gap-3">
+          <div class="block">
+            <div class="lbl"><label for="spend">Net withdrawal (£ / year)</label> <button type="button" class="help-tip" data-help="What you want left after UK income tax each year, in today’s pounds. The model withdraws more from taxable pots if needed so you still receive this net amount." aria-label="About net withdrawal">?</button></div>
+            <input id="spend" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="40000" />
+          </div>
+          <div class="block">
+            <div class="lbl"><label for="targetSuccess">Success target %</label> <button type="button" class="help-tip" data-help="Share of simulated paths that must still have money at the horizon when the planner searches for the highest constant net withdrawal. 90 is the usual planning default. This does not change the success rate shown for your entered withdrawal — only the companion withdrawal figure." aria-label="About success target">?</button></div>
+            <input id="targetSuccess" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="90" />
+          </div>
+        </div>
+        <p class="section-kicker mt-5">Market assumptions</p>
+        <p class="mt-1 text-xs text-slate-500">Inflation, expected return and volatility are used for the single expected-return line and for GBM. Historical replay uses actual market years from the earliest year you set below.</p>
+        <div class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div class="block">
+            <div class="lbl"><label for="inflation">Inflation %</label> <button type="button" class="help-tip" data-help="Assumed price inflation. Used to convert your nominal expected return into a real (today’s £) return. Incomes entered in today’s money stay flat in real terms unless their indexation differs." aria-label="About inflation">?</button></div>
+            <input id="inflation" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="2.5" />
+          </div>
+          <div class="block">
+            <div class="lbl"><label for="expReturn">Expected return %</label> <button type="button" class="help-tip" data-help="Nominal annual growth used for the single deterministic line and for GBM Monte Carlo. Leave a pot’s own return blank to use this rate. Historical replay ignores this and uses actual market years instead." aria-label="About expected return">?</button></div>
+            <input id="expReturn" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="6" />
+          </div>
+          <div class="block col-span-2 sm:col-span-1">
+            <div class="lbl"><label for="volatility">Volatility %</label> <button type="button" class="help-tip" data-help="How much annual returns bounce around in GBM Monte Carlo only. Historical replay uses real market sequences instead. Cash volatility is capped at 2%." aria-label="About volatility">?</button></div>
+            <input id="volatility" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="12" />
+          </div>
+        </div>
+        <div class="mt-3">
+          <div class="lbl"><label for="histFromYear">Earliest historical year</label> <button type="button" class="help-tip" data-help="First calendar year allowed in Replay historical markets. Windows that would start earlier are dropped, so min / max / median and the success rate use only sequences from this year through 2022. 1900 is the full sample. 1950 skips the world wars and the Depression. GBM ignores this." aria-label="About earliest historical year">?</button></div>
+          <div class="mt-1 flex flex-wrap items-center gap-2">
+            <input id="histFromYear" class="field font-mono w-28" type="text" inputmode="numeric" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="1900" />
+            <div class="flex flex-wrap gap-1">
+              <button type="button" data-hist-from="1900" class="rounded-md bg-ink-900 px-2.5 py-1 text-xs font-medium text-white">1900</button>
+              <button type="button" data-hist-from="1950" class="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50">1950</button>
+              <button type="button" data-hist-from="1970" class="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50">1970</button>
+            </div>
+          </div>
+          <p class="mt-1 text-xs text-slate-500">Replay historical markets only. Every window uses consecutive returns from this year through 2022.</p>
+          <p id="histFromHint" class="mt-1 text-xs text-slate-600"></p>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <p id="saveStatus" class="text-[11px] text-slate-500">Changes save automatically in this browser.</p>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" data-export-plan class="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50">Save plan file</button>
+            <button type="button" data-import-plan class="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50">Restore plan file</button>
+            <button id="resetDemoBtn" type="button" class="text-[11px] font-medium text-slate-600 underline-offset-2 hover:text-slate-900 hover:underline">Reset to demo defaults</button>
+          </div>
+        </div>
+        <p id="assumptionError" class="mt-3 hidden text-xs text-rose-700"></p>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">Pots <button type="button" class="help-tip" data-help="Add each pot you hold today. The type sets the tax wrapper: ISA withdrawals are tax-free; SIPP uses the tax-free and taxable amounts you enter (default 25% / 75% if you have not taken PCLS), capped by the £268,275 LSA; GIA and cash withdrawals are taxable; a 401(k) is fully UK-taxable, with RMDs from age 73. Foreign pots take any currency plus an FX rate." aria-label="About investment pots">?</button></h2>
+            <p class="mt-1 text-sm text-slate-600">Today’s values. Leave a pot’s return blank to use the global expected return.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="addAssetType" class="field w-auto min-w-[12rem] py-2 text-sm">
+              <option value="cash">Cash / GIA (cash)</option>
+              <option value="gia">GIA investments</option>
+              <option value="isa">Stocks &amp; Shares ISA</option>
+              <option value="sipp">UK SIPP</option>
+              <option value="us401k">US 401(k) / IRA</option>
+            </select>
+            <button id="addAssetBtn" type="button" class="rounded-md bg-ink-900 px-3 py-2 text-sm font-medium text-white hover:bg-ink-700">Add pot</button>
+          </div>
+        </div>
+        <div id="assetList" class="mt-4 space-y-3"></div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">Income &amp; pensions <button type="button" class="help-tip" data-help="Guaranteed income taken first each year, before pot withdrawals. Amounts are in today’s money. UK State Pension is treated as inflation-linked. A foreign pension can be in any currency with an FX rate (GBP per 1 unit)." aria-label="About income streams">?</button></h2>
+            <p class="mt-1 text-sm text-slate-600">Today’s money. UK State Pension stays flat in real terms.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="addIncomeType" class="field w-auto min-w-[12rem] py-2 text-sm">
+              <option value="ukState">UK State Pension</option>
+              <option value="foreignState">Foreign state pension</option>
+              <option value="db">Defined benefit</option>
+            </select>
+            <button id="addIncomeBtn" type="button" class="rounded-md bg-ink-900 px-3 py-2 text-sm font-medium text-white hover:bg-ink-700">Add income</button>
+          </div>
+        </div>
+        <div id="incomeList" class="mt-4 space-y-3"></div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <h2 class="text-base font-semibold text-slate-900">Withdrawal order <button type="button" class="help-tip" data-help="Guaranteed pensions are taken first. Then pots are drawn in this order until your net withdrawal is covered. Required 401(k) RMDs still start at 73 even if that pot is last; any surplus is swept to cash / GIA." aria-label="About withdrawal order">?</button></h2>
+        <p class="mt-1 text-sm text-slate-600">
+          Pensions are taken first. Then pots are drawn in this order to cover the remaining net withdrawal.
+          401(k) RMDs still start at 73 even if that pot is last.
+        </p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button id="presetPreserveIsa" type="button" class="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50">Preserve ISA (SIPP first)</button>
+          <button id="presetTaxEfficient" type="button" class="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50">Tax-efficient (ISA first)</button>
+        </div>
+        <ol id="orderList" class="mt-3 space-y-2"></ol>
+      </div>
+
+      <p class="text-sm text-slate-600">Use the bar at the bottom of the screen to run a simulation or open Results. Help &amp; method explains the two run types.</p>
+    </section>
+
+    <!-- PAGE: results -->
+    <section id="pageResults" class="page-hidden mx-auto max-w-[1100px] space-y-5">
+      <div class="print-only mb-4 border-b border-slate-200 pb-3">
+        <p class="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">UK Retirement Planner · educational projection</p>
+        <h2 class="mt-1 text-xl font-semibold text-ink-900">Results report</h2>
+        <p id="printMeta" class="mt-1 text-xs text-slate-500"></p>
+        <p class="mt-2 text-[11px] leading-relaxed text-slate-500">Not personalised financial advice. Figures are illustrative, in today’s pounds, using simplified rUK 2026/27 tax bands.</p>
+      </div>
+      <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <div>
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Current plan</p>
+          <p id="resultsPlanSummary" class="mt-0.5 max-w-3xl text-sm leading-relaxed text-slate-800">—</p>
+        </div>
+        <div class="flex flex-wrap gap-2 no-print">
+          <button type="button" data-export-plan class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Save plan file</button>
+          <button type="button" data-import-plan class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Restore plan file</button>
+          <button id="printResultsBtn" type="button" class="rounded-md bg-ink-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-ink-700">Print / Save as PDF</button>
+          <button id="gotoInputsBtn" type="button" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+            Edit inputs
+          </button>
+        </div>
+      </div>
+      <div id="simBanner" class="sim-banner no-print">
+        <p id="simBannerText" class="text-sm text-slate-800">The figures below are a single expected-return path. Run <span class="font-semibold">Replay historical markets</span> in the bar at the bottom to see success rate, min / max and the success-target withdrawal.</p>
+      </div>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Success rate <button type="button" class="help-tip" data-help="Share of simulated paths that still have a portfolio above £0 at the horizon age." aria-label="About success rate">?</button></p>
+          <p id="kpiSuccess" class="kpi-value mt-2 text-3xl font-semibold text-slate-400">—</p>
+          <p id="kpiSuccessNote" class="mt-1 text-[11px] text-slate-500">Paths with portfolio &gt; £0 at horizon</p>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Median capital at horizon <button type="button" class="help-tip" data-help="The middle path’s pot at the horizon age, in today’s pounds." aria-label="About median capital">?</button></p>
+          <p id="kpiMedian" class="kpi-value mt-2 text-3xl font-semibold text-slate-400">—</p>
+          <p class="mt-1 text-[11px] text-slate-500">50th percentile terminal wealth (real)</p>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Portfolio depletes (p10) <button type="button" class="help-tip" data-help="p10 is the first age the 10th-percentile path is empty. Worst case is the first age any simulated path is empty — the earliest ruin in the set." aria-label="About portfolio depletion">?</button></p>
+          <p id="kpiRuin" class="kpi-value mt-2 text-3xl font-semibold text-slate-400">—</p>
+          <p id="kpiRuinWorst" class="kpi-value mt-1 text-sm font-semibold text-slate-400">Worst case —</p>
+          <p id="kpiRuinNote" class="mt-1 text-[11px] text-slate-500">10th percentile · run a simulation for worst case</p>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p id="kpiSpend90Label" class="text-[11px] font-medium uppercase tracking-wide text-slate-500"><span id="kpiSpend90Title">90% success withdrawal</span> <button type="button" class="help-tip" data-help="Highest constant real net withdrawal at which at least your chosen share of the same paths still have money at the horizon. Set that share on Inputs. It can be above or below the amount you entered." aria-label="About success-target withdrawal">?</button></p>
+          <p id="kpiSpend90" class="kpi-value mt-2 text-3xl font-semibold text-slate-400">—</p>
+          <p id="kpiSpend90Note" class="mt-1 text-[11px] text-slate-500">Highest constant real net withdrawal with ≥90% success</p>
+        </article>
+      </div>
+
+      <div>
+        <div class="mb-2 flex items-baseline justify-between gap-3">
+          <h3 class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Pot at selected ages (real £)</h3>
+          <p id="ageSnapshotHint" class="text-[11px] text-slate-500">Median path · run Monte Carlo for min / max</p>
+        </div>
+        <div id="ageSnapshotCards" class="grid grid-cols-2 gap-3 lg:grid-cols-3"></div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div class="flex items-baseline justify-between gap-3">
+          <h2 class="text-sm font-semibold">Portfolio projection (real £)</h2>
+          <p id="chartHint" class="text-[11px] text-slate-500">Deterministic path — run Monte Carlo for percentiles</p>
+        </div>
+        <div class="chart-frame mt-3 h-[340px]">
+          <canvas id="percentileChart"></canvas>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div class="flex items-baseline justify-between gap-3">
+          <h2 class="text-sm font-semibold">Income source allocation (deterministic)</h2>
+          <p class="text-[11px] text-slate-500">Bars = gross drawn · dashed line = net withdrawal</p>
+        </div>
+        <div class="chart-frame mt-3 h-[320px]">
+          <canvas id="incomeChart"></canvas>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div class="flex items-baseline justify-between gap-3">
+          <h2 class="text-sm font-semibold">Year-by-year tax &amp; cash-flow</h2>
+          <p class="text-[11px] text-slate-500">Deterministic path · real £ · drawdown years</p>
+        </div>
+        <div id="cashflowTableWrap" class="cashflow-scroll mt-3 max-h-[420px] overflow-auto rounded-lg border border-slate-200"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="stickyActions" class="sticky-actions no-print hidden" hidden>
+    <div class="mx-auto flex max-w-[1100px] flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+      <p id="stickyHint" class="text-sm text-slate-700">Run a simulation to see success rate and the success-target withdrawal.</p>
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" data-run-hist class="rounded-lg bg-ink-950 px-3 py-2 text-sm font-semibold text-white hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-60">Replay historical markets</button>
+        <button type="button" data-run-gbm class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">Run 1,000 GBM paths</button>
+        <button type="button" id="stickyGotoResults" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">View results</button>
+        <button type="button" id="stickyGotoInputs" class="hidden rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">Edit inputs</button>
+      </div>
+    </div>
+    <div id="progressWrap" class="mx-auto mt-2 hidden max-w-[1100px]">
+      <div class="h-1.5 overflow-hidden rounded-full bg-slate-200">
+        <div id="progressBar" class="h-full w-0 bg-ink-900 transition-[width] duration-150"></div>
+      </div>
+      <p id="progressLabel" class="mt-1 text-xs text-slate-600">0 / 1,000</p>
+    </div>
+  </div>
+
+  <footer class="no-print border-t border-slate-200 bg-white">
+    <div class="mx-auto max-w-[1600px] px-4 py-6 text-[11px] leading-relaxed text-slate-500 sm:px-6">
+      <p>
+        This tool is an educational cash-flow and stochastic model. It is not personalised financial advice, a regulated activity, or a substitute for a qualified UK financial planner.
+        Tax treatment uses simplified England, Wales and Northern Ireland 2026/27 frozen bands and the standard Personal Allowance taper. Scottish income tax, National Insurance, the Money Purchase Annual Allowance, inheritance tax, means-tested benefits, US withholding and foreign tax credits are not modelled.
+        SIPP tax-free cash uses the remaining tax-free versus taxable split you enter on each SIPP (default 25% / 75% if unused), still capped by the Lump Sum Allowance of £268,275. US 401(k)/IRA withdrawals are treated as fully UK-taxable under a simplified US–UK treaty reading; RMDs use an IRS Uniform Lifetime Table approximation.
+        Historical market replay uses January-to-January real total returns on the Shiller S&amp;P Composite (1900–2022, via the Open Knowledge <span class="font-medium">datasets/s-and-p-500</span> series) for invested pots, and a real cash proxy from the 10-year yield minus 1 percentage point, deflated by CPI. GBM paths are i.i.d. and uncorrelated across pots. Past returns do not predict future results. Verify figures against current HMRC / IRS publications before relying on them.
+      </p>
+    </div>
+  </footer>
+
+  <div id="helpModal" class="modal-hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="absolute inset-0 bg-ink-950/55" data-close-modal="helpModal"></div>
+    <div class="relative mx-auto my-4 max-h-[92vh] w-[min(48rem,calc(100%-1.5rem))] overflow-auto rounded-xl bg-white p-5 shadow-2xl sm:my-8 sm:p-7">
+      <div class="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Guide</p>
+          <h2 id="helpTitle" class="mt-1 text-lg font-semibold text-ink-900">Help &amp; method</h2>
+        </div>
+        <button type="button" class="rounded-md px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-close-modal="helpModal" aria-label="Close help">Close</button>
+      </div>
+      <div class="inline-flex rounded-lg border border-slate-200 p-0.5" role="tablist" aria-label="Help sections">
+        <button id="helpTabUse" type="button" role="tab" aria-selected="true" aria-controls="helpPanelUse" class="rounded-md bg-ink-900 px-3 py-1.5 text-xs font-semibold text-white">How to use</button>
+        <button id="helpTabMethod" type="button" role="tab" aria-selected="false" aria-controls="helpPanelMethod" class="rounded-md px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900">Method</button>
+      </div>
+
+      <div id="helpPanelUse" class="help-prose mt-4" role="tabpanel" aria-labelledby="helpTabUse">
+        <h3>What this tool is</h3>
+        <p>An educational planner for a UK-taxed household (England, Wales or Northern Ireland) with ISAs, SIPPs, taxable accounts and a US 401(k)/IRA. You enter a plan, then test whether the pots can fund your net withdrawal to a horizon age. It is <strong>not</strong> personalised or regulated financial advice. Figures are illustrative.</p>
+        <p>Everything you see is in <strong>today’s pounds</strong>. A pot of £1m at age 85 means £1m of today’s spending power, not a future bank statement.</p>
+
+        <h3>The three pages</h3>
+        <ul>
+          <li><strong>Start</strong> — welcome and a short description of the two tests.</li>
+          <li><strong>Inputs</strong> — your ages, withdrawal, pots, pensions and withdrawal order.</li>
+          <li><strong>Results</strong> — success rate, age snapshots, charts and the year-by-year table.</li>
+        </ul>
+
+        <h3>1. Enter your plan</h3>
+        <p>Open <strong>Inputs</strong>. Tap the <strong>?</strong> beside any field for a short explanation of that input.</p>
+        <ul>
+          <li><strong>Ages</strong> — current age, when withdrawals start, and the last age modelled (the horizon).</li>
+          <li><strong>Net withdrawal</strong> — what you want left after UK income tax each year, in today’s pounds. The model may withdraw more from taxable pots so you still receive this net amount.</li>
+          <li><strong>Success target %</strong> — used only when the planner searches for the companion “success-target withdrawal”. It does not change the success rate shown for the amount you typed.</li>
+          <li><strong>Pots</strong> — add ISA, SIPP, GIA, cash or a US 401(k). On a SIPP, enter how much is still tax-free versus already taxable if you have already taken PCLS. Foreign pots and foreign pensions take any currency plus an FX rate (GBP per 1 unit). Leave a pot’s return blank to use the global expected return.</li>
+          <li><strong>Income &amp; pensions</strong> — State Pension and other guaranteed income, with a start age.</li>
+          <li><strong>Withdrawal order</strong> — which pot is drawn first after guaranteed income. Use the up / down buttons or a preset.</li>
+          <li><strong>Earliest historical year</strong> — 1900 is the full market sample. 1950 skips the world wars and the Depression. This only affects Replay historical markets.</li>
+        </ul>
+        <p>Changes save automatically in this browser. Use <strong>Save plan file</strong> for a private backup you can restore later.</p>
+
+        <h3>2. Run a test</h3>
+        <p>On Inputs or Results, use the bar at the <strong>bottom of the screen</strong>. Until you run a test, Results shows only a single expected-return line — not a success rate or min / max.</p>
+        <ul>
+          <li><strong>Replay historical markets</strong> — the usual starting point. Applies your plan to real US large-cap returns from 1900 through 2022 (or from the earliest year you set). Years stay in order; each overlapping stretch as long as your plan is one path.</li>
+          <li><strong>Run 1,000 GBM paths</strong> — Monte Carlo. Draws random paths from the expected return and volatility you typed, not from historical calendar years.</li>
+        </ul>
+        <p>If you change inputs, the bar tells you the last run is out of date. Run it again before you trust the Results numbers. <strong>Market history 1900–2022</strong> in the header charts the same return series the replay uses.</p>
+
+        <h3>3. Read Results</h3>
+        <ul>
+          <li><strong>Success rate</strong> — share of tested paths that still have money at the horizon.</li>
+          <li><strong>Median capital</strong> — the middle path’s pot at the horizon, in today’s pounds.</li>
+          <li><strong>Portfolio depletes</strong> — first age the weaker (10th-percentile) path is empty. <strong>Worst case</strong> is the earliest age any path runs out.</li>
+          <li><strong>Success-target withdrawal</strong> — the highest constant net withdrawal at which at least your chosen share of paths still succeed. It can be above or below the amount you entered.</li>
+          <li><strong>Age cards</strong> — after a run, each age shows median, min and max pot at that age. The richest year at 70 need not be the same path as at 90.</li>
+          <li><strong>Charts and table</strong> — portfolio over age, where income is drawn from, and a year-by-year tax and cash-flow table.</li>
+        </ul>
+        <p>Use <strong>Print / Save as PDF</strong> on Results for a readable copy. Switch to the <strong>Method</strong> tab for tax treatment, data sources and what is not modelled.</p>
+      </div>
+
+      <div id="helpPanelMethod" class="help-prose mt-4 hidden" role="tabpanel" aria-labelledby="helpTabMethod" hidden>
+        <h3>Today’s money (real £)</h3>
+        <p>Everything on the charts and in the table is in <strong>today’s purchasing power</strong>. Your <strong>net withdrawal</strong> is the amount you want left after income tax each year, held constant in real terms.</p>
+        <p>Expected return is entered as <strong>nominal</strong>. The engine converts it to a real return using your inflation rate: (1 + return) / (1 + inflation) − 1. State Pension is entered in today’s £ and treated as inflation-linked. Foreign pensions can be in any currency with an FX rate (GBP per 1 unit) and are also treated as inflation-linked. A DB pension only changes in real terms if its indexation differs from inflation.</p>
+
+        <h3>How a year is calculated</h3>
+        <p>In each retirement year the model takes guaranteed income first, then draws from invested pots in your chosen order until net of UK income tax covers the net withdrawal (or the pots run out). Growth is applied <strong>after</strong> that year’s withdrawals. Tax uses simplified England / Wales / NI 2026/27 bands (20% / 40% / 45%), Personal Allowance £12,570 with the £100,000 taper, and frozen thresholds in real terms.</p>
+        <ul>
+          <li><strong>ISA</strong> — withdrawals are tax-free.</li>
+          <li><strong>GIA / cash</strong> — withdrawals are treated as taxable income. Optional taxable yield is extra deemed income (the pot is not reduced by that yield alone).</li>
+          <li><strong>SIPP</strong> — you enter how much of today’s pot is still tax-free versus taxable. Withdrawals keep that mix (it grows with the pot) until the tax-free remainder is used, and are also capped by the £268,275 Lump Sum Allowance. Enter 0 tax-free if you have already taken the tax-free lump sum. If you leave the split blank, the model uses 25% / 75% (UFPLS-style).</li>
+          <li><strong>US 401(k) / IRA</strong> — treated as fully UK-taxable. Required Minimum Distributions start at age 73 using an IRS Uniform Lifetime Table approximation. Surplus RMD is swept to cash / GIA.</li>
+        </ul>
+        <p>The 401(k) start age is not typed in. Discretionary draws follow the withdrawal order; RMDs still apply from 73 if anything remains.</p>
+
+        <h3>The two simulations</h3>
+        <p><strong>Replay historical markets</strong> walks every overlapping stretch of real US large-cap total returns from your <strong>earliest historical year</strong> through 2022 that is as long as your plan (the full library is 1900–2022). That is the same sequence of consecutive years, not shuffled random returns. Min / max / percentiles and the success-target withdrawal all come from those windows. A later start (for example 1950) drops earlier crises and usually leaves fewer windows.</p>
+        <p><strong>GBM Monte Carlo</strong> draws 1,000 independent random paths from the expected return and volatility you typed (geometric Brownian motion; cash volatility capped at 2%). Those paths are not historical calendar years.</p>
+        <p>The chart hint tells you which set you are looking at. Changing inputs marks the last simulation stale until you run it again.</p>
+
+        <h3>How to read the stats</h3>
+        <ul>
+          <li><strong>Success rate</strong> — share of paths with a portfolio above £0 at the horizon age.</li>
+          <li><strong>Median capital</strong> — 50th percentile pot at the horizon, real £.</li>
+          <li><strong>Portfolio depletes (p10)</strong> — first age at which the 10th-percentile path is empty. <strong>Worst case</strong> is the first age any path in that run is empty (the earliest ruin).</li>
+          <li><strong>Success-target withdrawal</strong> — highest constant real net withdrawal at which at least your chosen share of the same paths still have money at the horizon (default 90%). It can be above or below the amount you entered.</li>
+          <li><strong>Min / max on age cards</strong> — lowest and highest pot among those paths <em>at that age</em>. Max is not one continuous “best career”: the richest window at 70 may differ from the richest at 90. The hint’s <strong>best start</strong> / <strong>worst start</strong> year is the single historical window with the most / least money at the horizon.</li>
+          <li><strong>p10 / p50 / p90</strong> — after a historical run, these are percentiles of those consecutive windows. After GBM, they are percentiles of the random paths.</li>
+        </ul>
+
+        <h3>What the market data is based on</h3>
+        <p>Invested pots in historical mode use January-to-January <strong>real total returns</strong> on Robert Shiller’s S&amp;P Composite (price plus that year’s real dividend), via the Open Knowledge <strong>datasets/s-and-p-500</strong> series (Shiller, extended with FRED prices for recent months that lack a full real series). The embedded sample is <strong>1900–2022</strong> (123 years).</p>
+        <p>Cash / GIA-cash in historical mode uses a <strong>real T-bill proxy</strong>: (1 + max(0, 10-year yield − 1 percentage point)) / (1 + CPI inflation) − 1. That is not a UK gilt or cash ISA series.</p>
+        <p>This is a US large-cap proxy, not your exact ISA/SIPP mix or a UK equity index. Past sequences do not predict the future. The <strong>Market history</strong> button charts this same series. <strong>Earliest historical year</strong> on Inputs limits which windows are replayed; the chart still shows the full library.</p>
+
+        <h3>What is not modelled</h3>
+        <p>Scottish income tax, National Insurance, MPAA, inheritance tax, means-tested benefits, US withholding, foreign tax credits, sequence-of-returns within a year, fees, and rebalancing between pots. Investment pots are assumed uncorrelated in GBM mode. Tax bands stay at 2026/27 levels in real terms.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="marketModal" class="modal-hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="marketTitle">
+    <div class="absolute inset-0 bg-ink-950/55" data-close-modal="marketModal"></div>
+    <div class="relative mx-auto my-4 max-h-[92vh] w-[min(56rem,calc(100%-1.5rem))] overflow-auto rounded-xl bg-white p-5 shadow-2xl sm:my-8 sm:p-7">
+      <div class="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Same series as historical replay</p>
+          <h2 id="marketTitle" class="mt-1 text-lg font-semibold text-ink-900">US large-cap real returns, 1900–2022</h2>
+        </div>
+        <button type="button" class="rounded-md px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-800" data-close-modal="marketModal" aria-label="Close market history">Close</button>
+      </div>
+      <p class="text-sm leading-relaxed text-slate-700">
+        Shiller S&amp;P Composite, inflation-adjusted, including dividends. Cash is a real T-bill proxy (10-year yield minus 1pp, deflated by CPI).
+        The cumulative chart starts at 100 in 1900. This is the path library the planner replays — not a forecast.
+      </p>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <button id="marketViewCum" type="button" class="rounded-md bg-ink-900 px-2.5 py-1 text-xs font-medium text-white">Cumulative real growth</button>
+        <button id="marketViewAnn" type="button" class="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50">Annual real returns</button>
+      </div>
+      <div id="marketStats" class="mt-3 grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-4"></div>
+      <div id="marketSampleNote" class="mt-3 hidden rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5"></div>
+      <div class="mt-3 h-[360px]">
+        <canvas id="marketHistChart"></canvas>
+      </div>
+      <div id="marketWindows" class="mt-3 grid gap-2 sm:grid-cols-3"></div>
+      <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
+        <h3 class="text-sm font-semibold text-ink-900">How best, worst and median are chosen</h3>
+        <p class="mt-2">
+          Replay historical markets does not pick the single best or worst year on this chart.
+          It walks every overlapping stretch of <span class="font-medium text-slate-900">consecutive</span> years that is as long as your plan
+          (for example 33 years from age 58 to 90). Each stretch is one window, starting in a different calendar year.
+          Your pots, tax and pensions are applied to every window. If you set an earliest historical year on Inputs, only windows that start in that year or later are ranked below. The chart itself still shows the full 1900–2022 library.
+        </p>
+        <ul class="mt-3 list-disc space-y-2 pl-4">
+          <li><span class="font-medium text-slate-900">Median</span> — at each age the windows are lined up by pot size. The middle one is the median. Median capital at the horizon is that middle window’s pot at the last age.</li>
+          <li><span class="font-medium text-slate-900">Best / worst start year</span> — the one window that finishes with the most / least money at the horizon. That is a whole career of returns, not the single best or worst calendar year in the tiles above.</li>
+          <li><span class="font-medium text-slate-900">Min / max on the age cards</span> — the poorest and richest pot <em>at that age</em> across windows. The richest window at 70 need not be the same as the richest at 90.</li>
+          <li><span class="font-medium text-slate-900">Worst-case depletion</span> — the first age at which any window has run out of money. That can be earlier than the 10th-percentile (p10) path.</li>
+        </ul>
+        <p class="mt-3 text-slate-600">
+          The “Best / worst equity year” tiles are only the highest and lowest <em>one-year</em> equity return on this chart. They are not the planner’s best and worst retirement outcomes.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <input id="importPlanFile" type="file" accept=".json,application/json" class="hidden" />
+
+  <script>
+(function () {
+  "use strict";
+
+  const LSA_CAP = 268275;
+  const PA_FULL = 12570;
+  const PA_TAPER_START = 100000;
+  const BASIC_BAND = 37700;
+  const ADDITIONAL_THRESHOLD = 125140;
+  const MC_PATHS = 1000;
+  const MC_CHUNK = 40;
+  const DEFAULT_RMD_AGE = 73;
+  const RUIN_EPS = 1;
+  const DEFAULT_TARGET_SUCCESS = 90;
+
+  /* January-to-January real total returns, 1900–2022.
+     Equity: Shiller S&P Composite real price + that year's real dividend
+     (Open Knowledge datasets/s-and-p-500, sourced from Shiller).
+     Cash: (1 + max(0, 10-year yield − 1pp)) / (1 + CPI inflation) − 1. */
+  const HIST_MARKET = {
+    startYear: 1900,
+    endYear: 2022,
+    equity: [
+      0.2383,0.1652,-0.0125,-0.1313,0.2793,0.2106,-0.0340,-0.2210,0.3374,0.0498,0.0360,0.0454,
+      -0.0005,-0.0679,-0.0654,0.2686,-0.0339,-0.3110,-0.0096,0.0192,-0.1239,0.2277,0.2969,0.0215,
+      0.2610,0.2110,0.1399,0.3819,0.4844,-0.0877,-0.1605,-0.3673,0.0131,0.5136,-0.1058,0.5155,
+      0.3031,-0.3168,0.1670,0.0413,-0.1005,-0.1800,0.1111,0.1997,0.1659,0.3548,-0.2520,-0.0652,
+      0.0858,0.1988,0.2440,0.1570,0.1363,0.0167,0.4699,0.2823,0.0374,-0.0886,0.3761,0.0659,
+      0.0448,0.1826,-0.0399,0.1908,0.1483,0.0944,-0.0955,0.1193,0.0591,-0.1369,0.0161,0.1018,
+      0.1353,-0.2317,-0.2910,0.2984,0.0587,-0.1437,0.0628,0.0266,0.1225,-0.1401,0.2428,0.1541,
+      0.0400,0.2124,0.2914,-0.0576,0.1260,0.1694,-0.0601,0.2826,0.0419,0.0883,-0.0161,0.3146,
+      0.2338,0.2578,0.2916,0.1242,-0.0859,-0.1443,-0.2204,0.2596,0.0300,0.0591,0.1103,-0.0528,
+      -0.3521,0.2899,0.1433,0.0054,0.1443,0.2354,0.1358,-0.0457,0.1803,0.2226,-0.0606,0.2487,
+      0.1588,0.1367,-0.1724
+    ],
+    cash: [
+      0.0467,-0.0036,-0.0679,0.0699,0.0010,0.0248,-0.0197,0.0492,-0.0035,-0.0720,0.1038,0.0411,
+      -0.0403,0.0138,0.0214,0.0026,-0.0840,-0.1373,-0.1212,-0.1152,0.0561,0.1702,0.0391,0.0037,
+      0.0306,-0.0059,0.0503,0.0352,0.0353,0.0260,0.1001,0.1379,0.1382,-0.0002,-0.0088,0.0031,
+      -0.0051,0.0096,0.0301,0.0209,-0.0023,-0.0934,-0.0574,-0.0145,-0.0080,-0.0086,-0.1434,-0.0815,
+      0.0017,0.0347,-0.0626,-0.0265,0.0130,0.0069,0.0224,0.0123,-0.0105,-0.0112,0.0068,0.0197,
+      0.0198,0.0215,0.0172,0.0117,0.0218,0.0124,0.0015,-0.0007,0.0013,-0.0107,0.0142,0.0191,
+      0.0125,-0.0359,-0.0520,-0.0020,0.0145,-0.0059,-0.0212,-0.0510,-0.0181,0.0293,0.0952,0.0506,
+      0.0689,0.0625,0.0663,0.0195,0.0287,0.0274,0.0148,0.0438,0.0268,0.0300,0.0189,0.0394,
+      0.0156,0.0395,0.0282,0.0095,0.0186,0.0298,0.0141,0.0110,0.0018,-0.0074,0.0132,-0.0050,
+      0.0271,-0.0108,0.0108,-0.0052,-0.0062,-0.0066,0.0195,-0.0049,-0.0137,-0.0063,0.0003,-0.0076,
+      -0.0063,-0.0689,-0.0531
+    ]
+  };
+
+  const ASSET_META = {
+    cash: { label: "Cash / GIA", short: "Cash" },
+    gia: { label: "GIA investments", short: "GIA" },
+    isa: { label: "Stocks & Shares ISA", short: "ISA" },
+    sipp: { label: "UK SIPP", short: "SIPP" },
+    us401k: { label: "US 401(k) / IRA", short: "401(k)" }
+  };
+
+  const INCOME_META = {
+    ukState: { label: "UK State Pension", short: "State Pension" },
+    foreignState: { label: "Foreign state pension", short: "Foreign pension" },
+    db: { label: "Defined benefit", short: "DB pension" }
+  };
+
+  const ORDER_META = {
+    sipp: { label: "UK SIPP", note: "Tax-free vs taxable as entered, capped by LSA" },
+    us401k: { label: "US 401(k) / IRA", note: "Fully UK-taxable · start follows this order" },
+    gia: { label: "GIA / cash", note: "Taxable withdrawals; unused PA used first" },
+    isa: { label: "Stocks & Shares ISA", note: "Tax-free; last if you want it to keep growing" }
+  };
+
+  const ORDER_PRESETS = {
+    preserveIsa: ["sipp", "us401k", "gia", "isa"],
+    taxEfficient: ["isa", "gia", "sipp", "us401k"]
+  };
+
+  const RMD_FACTORS = {
+    72: 27.4, 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9, 78: 22.0, 79: 21.1,
+    80: 20.2, 81: 19.4, 82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4,
+    88: 13.7, 89: 12.9, 90: 12.2, 91: 11.5, 92: 10.8, 93: 10.1, 94: 9.5, 95: 8.9,
+    96: 8.4, 97: 7.8, 98: 7.3, 99: 6.8, 100: 6.4, 101: 6.0, 102: 5.6, 103: 5.2,
+    104: 4.9, 105: 4.6, 106: 4.3, 107: 4.1, 108: 3.9, 109: 3.7, 110: 3.5, 111: 3.4,
+    112: 3.3, 113: 3.1, 114: 3.0, 115: 2.9, 116: 2.8, 117: 2.7, 118: 2.5, 119: 2.3, 120: 2.0
+  };
+
+  /* ---------- helpers ---------- */
+  let nextId = 1;
+  const uid = () => nextId++;
+
+  const num = (v, fallback = 0) => {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : fallback;
+  };
+
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+  const gbp = (v) => {
+    if (!Number.isFinite(v)) return "—";
+    const abs = Math.abs(v);
+    const sign = v < 0 ? "−" : "";
+    if (abs >= 1e6) return sign + "£" + (abs / 1e6).toFixed(2) + "m";
+    if (abs >= 1000) return sign + "£" + Math.round(abs).toLocaleString("en-GB");
+    return sign + "£" + abs.toFixed(0);
+  };
+
+  function todayPotGbp() {
+    return AppState.assets.reduce((s, a) => s + Math.max(0, num(a.value) * num(a.fx, 1)), 0);
+  }
+
+  function gbpDelta(v) {
+    if (!Number.isFinite(v)) return "—";
+    if (Math.abs(v) < 0.5) return "£0";
+    return (v > 0 ? "+" : "") + gbp(v);
+  }
+
+  const realReturn = (nomPct, infPct) => {
+    const n = nomPct / 100;
+    const i = infPct / 100;
+    return (1 + n) / (1 + i) - 1;
+  };
+
+  function rmdFactor(age) {
+    const a = Math.floor(age);
+    if (a <= 72) return RMD_FACTORS[72];
+    if (RMD_FACTORS[a] != null) return RMD_FACTORS[a];
+    return 2.0;
+  }
+
+  function currentWithdrawalOrder() {
+    return (AppState.withdrawalOrder && AppState.withdrawalOrder.length)
+      ? AppState.withdrawalOrder
+      : ORDER_PRESETS.taxEfficient;
+  }
+
+  function ordinal(n) {
+    const v = n % 100;
+    if (v >= 11 && v <= 13) return n + "th";
+    switch (n % 10) {
+      case 1: return n + "st";
+      case 2: return n + "nd";
+      case 3: return n + "rd";
+      default: return n + "th";
+    }
+  }
+
+  function orderContext(key) {
+    const order = currentWithdrawalOrder();
+    const idx = order.indexOf(key);
+    if (idx < 0) return null;
+    return {
+      idx,
+      rank: idx + 1,
+      before: order.slice(0, idx).map((k) => ORDER_META[k].label)
+    };
+  }
+
+  function firstOrderDrawAge(ages, breakdowns, key, retireAge) {
+    const ctx = orderContext(key);
+    if (!ctx || !ages || !ages.length) return null;
+    if (ctx.idx === 0) {
+      for (const age of ages) {
+        if (age >= retireAge) return age;
+      }
+      return retireAge;
+    }
+    const earlier = currentWithdrawalOrder().slice(0, ctx.idx);
+    let firstAny = null;
+    let firstAfterEarlier = null;
+    for (let i = 0; i < ages.length; i++) {
+      if (ages[i] < retireAge) continue;
+      const b = breakdowns[i] || emptyBreakdown();
+      if ((b[key] || 0) <= 0.5) continue;
+      if (firstAny == null) firstAny = ages[i];
+      const earlierStill = earlier.some((k) => (b[k] || 0) > 0.5);
+      if (!earlierStill && firstAfterEarlier == null) firstAfterEarlier = ages[i];
+    }
+    if (firstAny != null && firstAny < DEFAULT_RMD_AGE) return firstAny;
+    if (firstAfterEarlier != null) return firstAfterEarlier;
+    return firstAny;
+  }
+
+  const PathHints = { us401kDrawAge: null, us401kResolved: false };
+
+  function format401kStart(drawAge, resolved) {
+    const ctx = orderContext("us401k");
+    const a = assumptions();
+    if (!ctx) return { age: "—", note: "" };
+    let ageText;
+    if (drawAge != null) ageText = "Age " + drawAge;
+    else if (ctx.idx === 0) ageText = "Age " + Math.max(a.currentAge, a.retireAge);
+    else if (!resolved) ageText = "Once earlier pots are used";
+    else ageText = "Not needed on this path";
+    const orderBit = ctx.idx === 0
+      ? ordinal(ctx.rank) + " in withdrawal order (drawn first)"
+      : ordinal(ctx.rank) + " in withdrawal order · after " + ctx.before.join(" → ");
+    return {
+      age: ageText,
+      note: orderBit + ". RMDs from " + DEFAULT_RMD_AGE + " if the pot is still invested."
+    };
+  }
+
+  function update401kStartDisplay(ages, breakdowns) {
+    const a = assumptions();
+    if (ages && breakdowns) {
+      PathHints.us401kDrawAge = firstOrderDrawAge(ages, breakdowns, "us401k", a.retireAge);
+      PathHints.us401kResolved = true;
+    } else if (orderContext("us401k")?.idx === 0) {
+      PathHints.us401kDrawAge = Math.max(a.currentAge, a.retireAge);
+      PathHints.us401kResolved = true;
+    }
+    const copy = format401kStart(PathHints.us401kDrawAge, PathHints.us401kResolved);
+    document.querySelectorAll("[data-us401k-start-age]").forEach((el) => { el.textContent = copy.age; });
+    document.querySelectorAll("[data-us401k-start-note]").forEach((el) => { el.textContent = copy.note; });
+  }
+
+  /* Box-Muller */
+  let spareNorm = null;
+  function randn() {
+    if (spareNorm != null) {
+      const s = spareNorm;
+      spareNorm = null;
+      return s;
+    }
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    const mag = Math.sqrt(-2.0 * Math.log(u));
+    spareNorm = mag * Math.sin(2.0 * Math.PI * v);
+    return mag * Math.cos(2.0 * Math.PI * v);
+  }
+
+  function gbmReturn(mu, sigma) {
+    if (sigma <= 0) return mu;
+    return Math.exp((mu - 0.5 * sigma * sigma) + sigma * randn()) - 1;
+  }
+
+  /* ---------- tax engine ---------- */
+  const TaxEngine = {
+    personalAllowance(income) {
+      if (income <= PA_TAPER_START) return PA_FULL;
+      const reduction = (income - PA_TAPER_START) / 2;
+      return Math.max(0, PA_FULL - reduction);
+    },
+
+    incomeTax(gross) {
+      if (gross <= 0) return 0;
+      const pa = this.personalAllowance(gross);
+      let remaining = Math.max(0, gross - pa);
+      let tax = 0;
+      const basic = Math.min(remaining, BASIC_BAND);
+      tax += basic * 0.20;
+      remaining -= basic;
+      const higherCap = Math.max(0, ADDITIONAL_THRESHOLD - pa - BASIC_BAND);
+      const higher = Math.min(remaining, higherCap);
+      tax += higher * 0.40;
+      remaining -= higher;
+      tax += remaining * 0.45;
+      return tax;
+    },
+
+    unusedPA(taxable) {
+      if (taxable >= PA_TAPER_START) return 0;
+      return Math.max(0, PA_FULL - taxable);
+    },
+
+    sippSplit(withdrawal, remainingLSA, taxFreeFrac) {
+      const frac = Number.isFinite(taxFreeFrac) ? Math.min(1, Math.max(0, taxFreeFrac)) : 0.25;
+      const taxFree = Math.min(withdrawal * frac, Math.max(0, remainingLSA), withdrawal);
+      return { taxFree, taxable: withdrawal - taxFree };
+    },
+
+    withdrawToNet(netNeeded, currentTaxable, maxPot, taxFreeFrac, remainingLSA) {
+      if (netNeeded <= 0 || maxPot <= 0) return 0;
+      const oldTax = this.incomeTax(currentTaxable);
+      let lo = 0;
+      let hi = Math.min(maxPot, Math.max(netNeeded * 2.4, netNeeded + 5000));
+      for (let i = 0; i < 36; i++) {
+        const mid = (lo + hi) / 2;
+        const tf = Math.min(mid * taxFreeFrac, remainingLSA);
+        const newTax = this.incomeTax(currentTaxable + (mid - tf));
+        const net = mid - (newTax - oldTax);
+        if (net >= netNeeded) hi = mid;
+        else lo = mid;
+      }
+      return Math.min(maxPot, hi);
+    }
+  };
+
+  /* ---------- state ---------- */
+  const AppState = {
+    assets: [
+      { id: uid(), type: "cash", name: "Cash reserve", value: 20000, currency: "GBP", fx: 1, returnPct: 3, contribution: 0, rmdAge: 73, taxableYieldPct: 3 },
+      { id: uid(), type: "gia", name: "GIA investments", value: 50000, currency: "GBP", fx: 1, returnPct: "", contribution: 0, rmdAge: 73, taxableYieldPct: 2 },
+      { id: uid(), type: "isa", name: "Stocks & Shares ISA", value: 100000, currency: "GBP", fx: 1, returnPct: "", contribution: 0, rmdAge: 73, taxableYieldPct: 0 },
+      { id: uid(), type: "sipp", name: "Workplace SIPP", value: 300000, currency: "GBP", fx: 1, returnPct: "", contribution: 0, rmdAge: 73, taxableYieldPct: 0 }
+    ],
+    incomes: [
+      { id: uid(), type: "ukState", name: "UK State Pension", amount: 11973, currency: "GBP", fx: 1, startAge: 67, indexationPct: 2.5, taxStatus: "taxable" }
+    ],
+    withdrawalOrder: ORDER_PRESETS.preserveIsa.slice()
+  };
+
+  const STORAGE_KEY = "uk-retire-planner-v1";
+  const ASSUMPTION_IDS = ["currentAge", "retireAge", "horizonAge", "spend", "inflation", "expReturn", "volatility", "targetSuccess", "histFromYear"];
+  const DEMO_ASSUMPTIONS = { currentAge: "55", retireAge: "67", horizonAge: "100", spend: "40000", inflation: "2.5", expReturn: "6", volatility: "12", targetSuccess: "90", histFromYear: "1900" };
+
+  function demoState() {
+    return {
+      assets: [
+        { id: uid(), type: "cash", name: "Cash reserve", value: 20000, currency: "GBP", fx: 1, returnPct: 3, contribution: 0, rmdAge: 73, taxableYieldPct: 3 },
+        { id: uid(), type: "gia", name: "GIA investments", value: 50000, currency: "GBP", fx: 1, returnPct: "", contribution: 0, rmdAge: 73, taxableYieldPct: 2 },
+        { id: uid(), type: "isa", name: "Stocks & Shares ISA", value: 100000, currency: "GBP", fx: 1, returnPct: "", contribution: 0, rmdAge: 73, taxableYieldPct: 0 },
+        { id: uid(), type: "sipp", name: "Workplace SIPP", value: 300000, currency: "GBP", fx: 1, returnPct: "", contribution: 0, rmdAge: 73, taxableYieldPct: 0 }
+      ],
+      incomes: [
+        { id: uid(), type: "ukState", name: "UK State Pension", amount: 11973, currency: "GBP", fx: 1, startAge: 67, indexationPct: 2.5, taxStatus: "taxable" }
+      ],
+      withdrawalOrder: ORDER_PRESETS.preserveIsa.slice()
+    };
+  }
+
+  function applyAssumptionsToForm(values) {
+    ASSUMPTION_IDS.forEach((id) => {
+      if (values[id] != null && values[id] !== "") document.getElementById(id).value = values[id];
+    });
+    if (values.histFromYear == null || values.histFromYear === "") {
+      const el = document.getElementById("histFromYear");
+      if (el) el.value = String(HIST_MARKET.startYear);
+    }
+  }
+
+  function bumpNextId(items) {
+    (items || []).forEach((item) => {
+      if (item && item.id != null) nextId = Math.max(nextId, Number(item.id) + 1);
+    });
+  }
+
+  function currentAssumptionsFromForm() {
+    const assumptions = {};
+    ASSUMPTION_IDS.forEach((id) => { assumptions[id] = document.getElementById(id).value; });
+    return assumptions;
+  }
+
+  function snapshotPlan() {
+    return {
+      kind: "uk-retire-planner",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      assumptions: currentAssumptionsFromForm(),
+      assets: AppState.assets,
+      incomes: AppState.incomes,
+      withdrawalOrder: AppState.withdrawalOrder
+    };
+  }
+
+  function applyPlanData(data) {
+    if (!data || Number(data.version) !== 1) return false;
+    if (!data.assumptions && !Array.isArray(data.assets)) return false;
+    if (data.kind && data.kind !== "uk-retire-planner") return false;
+    if (data.assumptions) applyAssumptionsToForm(data.assumptions);
+    if (Array.isArray(data.assets) && data.assets.length) {
+      AppState.assets = data.assets;
+      bumpNextId(data.assets);
+    }
+    if (Array.isArray(data.incomes)) {
+      AppState.incomes = data.incomes;
+      bumpNextId(data.incomes);
+    }
+    if (Array.isArray(data.withdrawalOrder) && data.withdrawalOrder.length) {
+      const allowed = new Set(Object.keys(ORDER_META));
+      const cleaned = data.withdrawalOrder.filter((k) => allowed.has(k));
+      Object.keys(ORDER_META).forEach((k) => { if (!cleaned.includes(k)) cleaned.push(k); });
+      AppState.withdrawalOrder = cleaned;
+    }
+    return true;
+  }
+
+  function setFileIoStatus(msg) {
+    const el = document.getElementById("fileIoStatus");
+    if (el) el.textContent = msg || "";
+    const save = document.getElementById("saveStatus");
+    if (save && msg) save.textContent = msg;
+  }
+
+  function persist() {
+    try {
+      const snap = snapshotPlan();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        version: 1,
+        savedAt: snap.exportedAt,
+        assumptions: snap.assumptions,
+        assets: snap.assets,
+        incomes: snap.incomes,
+        withdrawalOrder: snap.withdrawalOrder
+      }));
+      const el = document.getElementById("saveStatus");
+      if (el) el.textContent = "Saved in this browser.";
+    } catch (err) {
+      const el = document.getElementById("saveStatus");
+      if (el) el.textContent = "Could not save in this browser (storage blocked).";
+    }
+  }
+
+  function loadPersisted() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      if (!applyPlanData(data)) return false;
+      const el = document.getElementById("saveStatus");
+      if (el) el.textContent = "Loaded your last saved plan.";
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function exportPlanFile() {
+    const snap = snapshotPlan();
+    const blob = new Blob([JSON.stringify(snap, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    const d = new Date();
+    const stamp = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    a.href = URL.createObjectURL(blob);
+    a.download = "uk-retirement-plan-" + stamp + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    setFileIoStatus("Downloaded " + a.download + ". Keep this file private.");
+  }
+
+  function importPlanFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function () {
+      try {
+        const data = JSON.parse(String(reader.result || ""));
+        if (!applyPlanData(data)) {
+          setFileIoStatus("That file is not a recognised plan export.");
+          return;
+        }
+        persist();
+        renderAssets();
+        renderIncomes();
+        renderOrder();
+        runDeterministic();
+        renderStartMeta();
+        setFileIoStatus("Restored plan from “" + file.name + "” and saved in this browser.");
+      } catch (err) {
+        setFileIoStatus("Could not read that file. Choose a JSON plan export.");
+      }
+    };
+    reader.onerror = function () {
+      setFileIoStatus("Could not open that file.");
+    };
+    reader.readAsText(file);
+  }
+
+  function bindPlanFiles() {
+    const picker = document.getElementById("importPlanFile");
+    document.querySelectorAll("[data-export-plan]").forEach(function (btn) {
+      btn.addEventListener("click", exportPlanFile);
+    });
+    document.querySelectorAll("[data-import-plan]").forEach(function (btn) {
+      btn.addEventListener("click", function () { picker.click(); });
+    });
+    picker.addEventListener("change", function () {
+      const file = picker.files && picker.files[0];
+      importPlanFile(file);
+      picker.value = "";
+    });
+  }
+
+  function setPrintChartInk(on) {
+    const ink = "#000000";
+    const screen = "#334155";
+    [percentileChart, incomeChart].forEach(function (ch) {
+      if (!ch || !ch.options) return;
+      const scales = ch.options.scales || {};
+      Object.keys(scales).forEach(function (k) {
+        const s = scales[k];
+        if (!s.ticks) s.ticks = {};
+        if (!s.title) s.title = {};
+        s.ticks.color = on ? ink : screen;
+        s.title.color = on ? ink : screen;
+        s.ticks.font = Object.assign({}, s.ticks.font, { size: on ? 12 : 11 });
+        s.title.font = Object.assign({}, s.title.font, { size: on ? 13 : 12 });
+      });
+      if (!ch.options.plugins) ch.options.plugins = {};
+      if (!ch.options.plugins.legend) ch.options.plugins.legend = {};
+      if (!ch.options.plugins.legend.labels) {
+        ch.options.plugins.legend.labels = { boxWidth: 12, padding: 16, usePointStyle: true };
+      }
+      ch.options.plugins.legend.labels.color = on ? ink : screen;
+      ch.update("none");
+    });
+  }
+
+  function printResults() {
+    showPage("results");
+    setPrintChartInk(true);
+    resizeResultCharts();
+    setTimeout(function () { window.print(); }, 280);
+  }
+
+  function resetDemo() {
+    const demo = demoState();
+    AppState.assets = demo.assets;
+    AppState.incomes = demo.incomes;
+    AppState.withdrawalOrder = demo.withdrawalOrder;
+    applyAssumptionsToForm(DEMO_ASSUMPTIONS);
+    persist();
+    renderAssets();
+    renderIncomes();
+    renderOrder();
+    scheduleDeterministic();
+    const el = document.getElementById("saveStatus");
+    if (el) el.textContent = "Demo defaults restored and saved.";
+  }
+
+  function assumptions() {
+    return {
+      currentAge: Math.round(num(document.getElementById("currentAge").value, 55)),
+      retireAge: Math.round(num(document.getElementById("retireAge").value, 67)),
+      horizonAge: Math.round(num(document.getElementById("horizonAge").value, 100)),
+      spend: Math.max(0, num(document.getElementById("spend").value, 0)),
+      inflation: num(document.getElementById("inflation").value, 2.5),
+      expReturn: num(document.getElementById("expReturn").value, 6),
+      volatility: Math.max(0, num(document.getElementById("volatility").value, 12)),
+      targetSuccess: clampTargetSuccess(document.getElementById("targetSuccess").value),
+      histFromYear: clampHistFromYear(document.getElementById("histFromYear").value)
+    };
+  }
+
+  function clampHistFromYear(raw) {
+    const n = Math.round(num(raw, HIST_MARKET.startYear));
+    return Math.min(HIST_MARKET.endYear, Math.max(HIST_MARKET.startYear, n));
+  }
+
+  function clampTargetSuccess(raw) {
+    const n = Math.round(num(raw, DEFAULT_TARGET_SUCCESS));
+    return Math.min(99, Math.max(1, n));
+  }
+
+  function successLabel(pct) {
+    return Math.round(pct == null ? DEFAULT_TARGET_SUCCESS : pct) + "%";
+  }
+
+  function validateAssumptions(a) {
+    if (a.currentAge >= a.horizonAge) return "Current age must be below plan horizon age.";
+    if (a.retireAge >= a.horizonAge) return "Retirement age must be below plan horizon age.";
+    if (a.horizonAge - a.currentAge > 80) return "Horizon is limited to 80 years from current age.";
+    if (a.targetSuccess < 1 || a.targetSuccess > 99) return "Success target must be between 1% and 99%.";
+    return "";
+  }
+
+  function assetReturnPct(asset, globalReturn) {
+    if (asset.returnPct === "" || asset.returnPct === null || asset.returnPct === undefined) return globalReturn;
+    return num(asset.returnPct, globalReturn);
+  }
+
+  function potGbp(p) {
+    return Math.max(0, num(p.value) * num(p.fx, 1));
+  }
+
+  /* ---------- cash-flow engine ---------- */
+  function hasExplicitSippTaxFree(a) {
+    return a && a.sippTaxFree !== "" && a.sippTaxFree != null;
+  }
+
+  function sippTaxFreeGbp(a) {
+    const v = potGbp(a);
+    if (!hasExplicitSippTaxFree(a)) return 0.25 * v;
+    return Math.min(v, Math.max(0, num(a.sippTaxFree)));
+  }
+
+  function sippSplitDisplay(a) {
+    const v = Math.max(0, num(a.value));
+    const tf = hasExplicitSippTaxFree(a) ? Math.min(v, Math.max(0, num(a.sippTaxFree))) : 0.25 * v;
+    return { taxFree: Math.round(tf * 100) / 100, taxable: Math.round(Math.max(0, v - tf) * 100) / 100 };
+  }
+
+  function sippTaxFreeAvailable(pots) {
+    return pots.reduce((s, p) => {
+      if (p.type !== "sipp") return s;
+      return s + Math.min(Math.max(0, p.taxFreeLeft || 0), potGbp(p));
+    }, 0);
+  }
+
+  function scalePotTaxFree(p, beforeValue) {
+    if (!p || !(p.taxFreeLeft > 0)) return;
+    if (!(beforeValue > 0)) {
+      p.taxFreeLeft = 0;
+      return;
+    }
+    p.taxFreeLeft *= p.value / beforeValue;
+    if (p.taxFreeLeft < 1e-8) p.taxFreeLeft = 0;
+  }
+
+  function clonePots(assets) {
+    return assets.map((a) => ({
+      id: a.id,
+      type: a.type,
+      value: Math.max(0, num(a.value)),
+      fx: Math.max(0.0001, num(a.fx, 1)),
+      contribution: Math.max(0, num(a.contribution)),
+      rmdAge: DEFAULT_RMD_AGE,
+      taxableYieldPct: Math.max(0, num(a.taxableYieldPct)),
+      taxFreeLeft: a.type === "sipp" ? sippTaxFreeGbp(a) : 0,
+      muNom: 0,
+      sigma: 0
+    }));
+  }
+
+  function sumPots(pots, types) {
+    return pots.reduce((s, p) => (types.includes(p.type) ? s + potGbp(p) : s), 0);
+  }
+
+  function takeFromPots(pots, types, amountGbp) {
+    let remaining = amountGbp;
+    let taken = 0;
+    for (const p of pots) {
+      if (!types.includes(p.type) || remaining <= 0) continue;
+      const avail = potGbp(p);
+      const takeGbp = Math.min(avail, remaining);
+      if (takeGbp <= 0) continue;
+      const before = p.value;
+      p.value -= takeGbp / p.fx;
+      if (p.value < 1e-8) p.value = 0;
+      scalePotTaxFree(p, before);
+      remaining -= takeGbp;
+      taken += takeGbp;
+    }
+    return taken;
+  }
+
+  function takeFromSippPots(pots, amountGbp) {
+    let remaining = amountGbp;
+    let taken = 0;
+    let taxFreeTaken = 0;
+    for (const p of pots) {
+      if (p.type !== "sipp" || remaining <= 0) continue;
+      const avail = potGbp(p);
+      const takeGbp = Math.min(avail, remaining);
+      if (takeGbp <= 0) continue;
+      const tfAvail = Math.min(Math.max(0, p.taxFreeLeft || 0), avail);
+      const tfTake = avail > 0 ? takeGbp * (tfAvail / avail) : 0;
+      const before = p.value;
+      p.value -= takeGbp / p.fx;
+      if (p.value < 1e-8) p.value = 0;
+      p.taxFreeLeft = Math.max(0, (p.taxFreeLeft || 0) - tfTake);
+      if (p.taxFreeLeft < 1e-8) p.taxFreeLeft = 0;
+      remaining -= takeGbp;
+      taken += takeGbp;
+      taxFreeTaken += tfTake;
+    }
+    return { taken, taxFreeTaken };
+  }
+
+  function addToCash(pots, amountGbp) {
+    if (amountGbp <= 0) return;
+    const dest = pots.find((p) => p.type === "cash") || pots.find((p) => p.type === "gia");
+    if (dest) dest.value += amountGbp / dest.fx;
+    else pots.push({ id: uid(), type: "cash", value: amountGbp, fx: 1, contribution: 0, rmdAge: DEFAULT_RMD_AGE, taxableYieldPct: 0, taxFreeLeft: 0, muNom: 0, sigma: 0 });
+  }
+
+  function incomeAmountReal(inc, yearsFromNow, inflationPct) {
+    const fx = num(inc.fx, 1);
+    const base = Math.max(0, num(inc.amount)) * fx;
+    if (inc.type === "db") {
+      const realG = realReturn(num(inc.indexationPct, inflationPct), inflationPct);
+      return base * Math.pow(1 + realG, yearsFromNow);
+    }
+    return base;
+  }
+
+  function returnSpecForYear(mode, y) {
+    if (mode && mode.kind === "hist") {
+      return {
+        kind: "hist",
+        equity: HIST_MARKET.equity[mode.startIdx + y],
+        cash: HIST_MARKET.cash[mode.startIdx + y]
+      };
+    }
+    if (mode && mode.kind === "replay") {
+      return { kind: "replay", byId: (mode.series && mode.series[y]) || {} };
+    }
+    if (mode === true || (mode && mode.kind === "gbm")) return { kind: "gbm" };
+    return { kind: "det" };
+  }
+
+  function applyReturns(pots, spec) {
+    for (const p of pots) {
+      let r;
+      if (spec && spec.kind === "hist") r = p.type === "cash" ? spec.cash : spec.equity;
+      else if (spec && spec.kind === "replay") r = spec.byId[p.id];
+      else if (spec && spec.kind === "gbm") r = gbmReturn(p.muReal, p.sigma);
+      else r = p.muReal;
+      if (!Number.isFinite(r)) r = 0;
+      const before = p.value;
+      p.value *= 1 + r;
+      if (p.value < 0) p.value = 0;
+      scalePotTaxFree(p, before);
+    }
+  }
+
+  function rollGbmSeries(assets, a, yearSteps) {
+    const pots = preparePots(assets, a);
+    const series = [];
+    for (let y = 0; y < yearSteps; y++) {
+      const byId = {};
+      for (const p of pots) byId[p.id] = gbmReturn(p.muReal, p.sigma);
+      series.push(byId);
+    }
+    return series;
+  }
+
+  function successRateForSpend(a, assets, incomes, modes, spend) {
+    const trial = Object.assign({}, a, { spend: Math.max(0, spend) });
+    let ok = 0;
+    for (const mode of modes) {
+      if (projectPath(trial, assets, incomes, mode).terminal > RUIN_EPS) ok++;
+    }
+    return modes.length ? ok / modes.length : 0;
+  }
+
+  function findSpendAtSuccess(a, assets, incomes, modes, target) {
+    if (!modes || !modes.length) return null;
+    const rateAt = (spend) => successRateForSpend(a, assets, incomes, modes, spend);
+    if (rateAt(0) < target) return 0;
+    let lo = 0;
+    let hi = Math.max(5000, a.spend || 0);
+    let guard = 0;
+    while (rateAt(hi) >= target && hi < 2e7 && guard++ < 18) {
+      lo = hi;
+      hi = Math.round(hi * 1.5);
+    }
+    if (rateAt(hi) >= target) return Math.floor(hi / 100) * 100;
+    for (let i = 0; i < 16; i++) {
+      const mid = (lo + hi) / 2;
+      if (rateAt(mid) >= target) lo = mid;
+      else hi = mid;
+    }
+    return Math.floor(lo / 100) * 100;
+  }
+
+  function applyContributions(pots) {
+    for (const p of pots) {
+      if (p.contribution > 0) {
+        const before = p.value;
+        p.value += p.contribution;
+        scalePotTaxFree(p, before);
+      }
+    }
+  }
+
+  function emptyBreakdown() {
+    return { ukState: 0, otherIncome: 0, isa: 0, gia: 0, sipp: 0, us401k: 0, tax: 0, taxable: 0, gross: 0, net: 0, shortfall: 0, spend: 0 };
+  }
+
+  function drawdownYear(pots, incomes, age, spendNeed, remainingLSA, inflationPct, currentAge) {
+    const bd = emptyBreakdown();
+    bd.spend = spendNeed;
+    const yearsFromNow = age - currentAge;
+    let guaranteed = 0;
+    let taxable = 0;
+
+    for (const inc of incomes) {
+      if (age < num(inc.startAge)) continue;
+      const amt = incomeAmountReal(inc, yearsFromNow, inflationPct);
+      if (amt <= 0) continue;
+      guaranteed += amt;
+      const taxableFlag = inc.type === "ukState" || inc.type === "db" || inc.taxStatus !== "exempt";
+      if (taxableFlag) taxable += amt;
+      if (inc.type === "ukState") bd.ukState += amt;
+      else bd.otherIncome += amt;
+    }
+
+    for (const p of pots) {
+      if (p.type !== "cash" && p.type !== "gia") continue;
+      const yieldAmt = potGbp(p) * (num(p.taxableYieldPct) / 100);
+      if (yieldAmt > 0) taxable += yieldAmt;
+    }
+
+    let isaW = 0, giaW = 0, sippW = 0, usW = 0;
+
+    const netOf = () => guaranteed + isaW + giaW + sippW + usW - TaxEngine.incomeTax(taxable);
+
+    let need = spendNeed - netOf();
+    if (need < 0) {
+      addToCash(pots, -need);
+      need = 0;
+    }
+
+    function drawIsa() {
+      if (need <= 0.01) return;
+      isaW += takeFromPots(pots, ["isa"], need);
+      need = spendNeed - netOf();
+    }
+
+    function drawGia() {
+      if (need <= 0.01) return;
+      const giaAvail = sumPots(pots, ["cash", "gia"]);
+      const paRoom = Math.min(TaxEngine.unusedPA(taxable), giaAvail, need);
+      if (paRoom > 0.01) {
+        const took = takeFromPots(pots, ["cash", "gia"], paRoom);
+        giaW += took;
+        taxable += took;
+        need = spendNeed - netOf();
+      }
+      if (need > 0.01) {
+        const avail = sumPots(pots, ["cash", "gia"]);
+        if (avail > 0) {
+          const w = TaxEngine.withdrawToNet(need, taxable, avail, 0, 0);
+          const took = takeFromPots(pots, ["cash", "gia"], w);
+          giaW += took;
+          taxable += took;
+          need = spendNeed - netOf();
+        }
+      }
+    }
+
+    function drawSipp() {
+      if (need <= 0.01) return;
+      const sippAvail = sumPots(pots, ["sipp"]);
+      if (sippAvail <= 0) return;
+      const taxFreeAvail = Math.min(remainingLSA, sippTaxFreeAvailable(pots));
+      const frac = sippAvail > 0 ? Math.min(1, taxFreeAvail / sippAvail) : 0;
+      const w = TaxEngine.withdrawToNet(need, taxable, sippAvail, frac, remainingLSA);
+      const drew = takeFromSippPots(pots, w);
+      const tf = Math.min(drew.taxFreeTaken, remainingLSA, drew.taken);
+      sippW += drew.taken;
+      taxable += drew.taken - tf;
+      remainingLSA -= tf;
+      need = spendNeed - netOf();
+    }
+
+    function drawUs() {
+      if (need <= 0.01) return;
+      const usAvail = sumPots(pots, ["us401k"]);
+      if (usAvail <= 0) return;
+      const w = TaxEngine.withdrawToNet(need, taxable, usAvail, 0, 0);
+      const took = takeFromPots(pots, ["us401k"], w);
+      usW += took;
+      taxable += took;
+      need = spendNeed - netOf();
+    }
+
+    const drawers = { isa: drawIsa, gia: drawGia, sipp: drawSipp, us401k: drawUs };
+    const order = currentWithdrawalOrder();
+    for (const key of order) {
+      if (drawers[key]) drawers[key]();
+    }
+
+    let rmdGbp = 0;
+    for (const p of pots) {
+      if (p.type !== "us401k" || age < DEFAULT_RMD_AGE) continue;
+      rmdGbp += potGbp(p) / rmdFactor(age);
+    }
+    if (rmdGbp > usW + 0.01) {
+      const extra = Math.min(rmdGbp - usW, sumPots(pots, ["us401k"]));
+      const took = takeFromPots(pots, ["us401k"], extra);
+      usW += took;
+      taxable += took;
+      const net = netOf();
+      if (net > spendNeed) {
+        addToCash(pots, net - spendNeed);
+        need = 0;
+      } else {
+        need = spendNeed - net;
+      }
+    }
+
+    bd.isa = isaW;
+    bd.gia = giaW;
+    bd.sipp = sippW;
+    bd.us401k = usW;
+    bd.taxable = taxable;
+    bd.tax = TaxEngine.incomeTax(taxable);
+    bd.gross = guaranteed + isaW + giaW + sippW + usW;
+    bd.net = bd.gross - bd.tax;
+    if (need > 0.5) bd.shortfall = need;
+
+    const portfolio = sumPots(pots, ["cash", "gia", "isa", "sipp", "us401k"]);
+    const ruined = portfolio <= RUIN_EPS && bd.shortfall > 0.5;
+    if (ruined) {
+      for (const p of pots) p.value = 0;
+    }
+
+    return { remainingLSA, breakdown: bd, ruined, portfolio: ruined ? 0 : portfolio };
+  }
+
+  function preparePots(assets, a) {
+    const pots = clonePots(assets);
+    const inf = a.inflation;
+    const vol = a.volatility / 100;
+    for (const p of pots) {
+      const src = assets.find((x) => x.id === p.id);
+      const nom = assetReturnPct(src, a.expReturn);
+      p.muNom = nom;
+      p.muReal = realReturn(nom, inf);
+      p.sigma = p.type === "cash" ? Math.min(vol, 0.02) : vol;
+    }
+    return pots;
+  }
+
+  function projectPath(a, assets, incomes, mode) {
+    const years = a.horizonAge - a.currentAge;
+    const ages = [];
+    const totals = [];
+    const breakdowns = [];
+    const pots = preparePots(assets, a);
+    let remainingLSA = LSA_CAP;
+    let ruined = false;
+
+    for (let y = 0; y <= years; y++) {
+      const age = a.currentAge + y;
+      ages.push(age);
+      const spec = returnSpecForYear(mode, y);
+
+      if (!ruined) {
+        if (age < a.retireAge) {
+          applyContributions(pots);
+          applyReturns(pots, spec);
+          const total = sumPots(pots, ["cash", "gia", "isa", "sipp", "us401k"]);
+          totals.push(total);
+          const bd = emptyBreakdown();
+          breakdowns.push(bd);
+        } else {
+          const result = drawdownYear(pots, incomes, age, a.spend, remainingLSA, a.inflation, a.currentAge);
+          remainingLSA = result.remainingLSA;
+          if (!result.ruined) applyReturns(pots, spec);
+          const total = result.ruined ? 0 : sumPots(pots, ["cash", "gia", "isa", "sipp", "us401k"]);
+          totals.push(total);
+          breakdowns.push(result.breakdown);
+          if (result.ruined || total <= RUIN_EPS) {
+            ruined = true;
+            if (total <= RUIN_EPS) totals[totals.length - 1] = 0;
+          }
+        }
+      } else {
+        totals.push(0);
+        breakdowns.push(emptyBreakdown());
+      }
+    }
+
+    const histStartYear = (mode && mode.kind === "hist")
+      ? HIST_MARKET.startYear + mode.startIdx
+      : null;
+    return { ages, totals, breakdowns, terminal: totals[totals.length - 1] || 0, histStartYear };
+  }
+
+  /* ---------- Monte Carlo ---------- */
+  const MonteCarlo = {
+    running: false,
+    last: null
+  };
+
+  function percentile(sorted, p) {
+    if (!sorted.length) return 0;
+    const idx = (sorted.length - 1) * p;
+    const lo = Math.floor(idx);
+    const hi = Math.ceil(idx);
+    if (lo === hi) return sorted[lo];
+    return sorted[lo] * (hi - idx) + sorted[hi] * (idx - lo);
+  }
+
+  function histWindowRange(windowLen, fromYear) {
+    const from = clampHistFromYear(fromYear);
+    const firstIdx = from - HIST_MARKET.startYear;
+    const lastIdx = HIST_MARKET.equity.length - windowLen;
+    const nWin = lastIdx >= firstIdx ? lastIdx - firstIdx + 1 : 0;
+    return {
+      fromYear: from,
+      firstIdx: firstIdx,
+      lastIdx: lastIdx,
+      nWin: nWin,
+      sampleStart: from,
+      sampleEnd: HIST_MARKET.endYear
+    };
+  }
+
+  function histSampleError(windowLen, range) {
+    if (range.fromYear <= HIST_MARKET.startYear) {
+      return "Horizon is longer than the " + HIST_MARKET.startYear + "–" + HIST_MARKET.endYear +
+        " market sample (" + HIST_MARKET.equity.length + " years).";
+    }
+    return "Not enough market years after " + range.fromYear + " for a " + windowLen +
+      "-year plan. The sample ends in " + HIST_MARKET.endYear +
+      ". Choose an earlier start year or a shorter horizon.";
+  }
+
+  let histWindowCache = null;
+
+  function windowYears(startYear, len) {
+    return startYear + "–" + (startYear + len - 1);
+  }
+
+  function histWindowKey(a) {
+    const pots = AppState.assets.map(function (x) {
+      return [x.type, x.value, x.currency, x.fx, x.returnPct, x.contribution, x.taxableYieldPct, x.rmdAge, x.sippTaxFree].join(":");
+    }).join(",");
+    const incs = AppState.incomes.map(function (x) {
+      return [x.type, x.amount, x.currency, x.fx, x.startAge, x.indexationPct, x.taxStatus].join(":");
+    }).join(",");
+    return [a.currentAge, a.retireAge, a.horizonAge, a.spend, a.inflation, a.targetSuccess, a.histFromYear, AppState.withdrawalOrder.join(","), pots, incs].join("|");
+  }
+
+  function rankHistWindows(startYears, terminals) {
+    let worstI = 0;
+    let bestI = 0;
+    for (let k = 1; k < terminals.length; k++) {
+      if (terminals[k] < terminals[worstI]) worstI = k;
+      if (terminals[k] > terminals[bestI]) bestI = k;
+    }
+    const order = terminals.map(function (_, i) { return i; })
+      .sort(function (i, j) { return terminals[i] - terminals[j]; });
+    const mid = order[Math.floor((order.length - 1) / 2)];
+    return {
+      bestStartYear: startYears[bestI],
+      worstStartYear: startYears[worstI],
+      medianStartYear: startYears[mid]
+    };
+  }
+
+  function rememberHistWindows(a, nWin, ranked) {
+    const value = {
+      ok: true,
+      windowLen: a.horizonAge - a.currentAge + 1,
+      nWin: nWin,
+      currentAge: a.currentAge,
+      horizonAge: a.horizonAge,
+      bestStartYear: ranked.bestStartYear,
+      worstStartYear: ranked.worstStartYear,
+      medianStartYear: ranked.medianStartYear,
+      sampleStart: a.histFromYear,
+      sampleEnd: HIST_MARKET.endYear
+    };
+    histWindowCache = { key: histWindowKey(a), value: value };
+    return value;
+  }
+
+  function computePlanHistWindows() {
+    const a = assumptions();
+    const err = validateAssumptions(a);
+    const windowLen = a.horizonAge - a.currentAge + 1;
+    const range = histWindowRange(windowLen, a.histFromYear);
+    if (err) return { ok: false, reason: err };
+    if (range.nWin < 1) {
+      return { ok: false, reason: histSampleError(windowLen, range) };
+    }
+    if (histWindowCache && histWindowCache.key === histWindowKey(a)) return histWindowCache.value;
+    const startYears = [];
+    const terminals = [];
+    for (let i = 0; i < range.nWin; i++) {
+      const path = projectPath(a, AppState.assets, AppState.incomes, { kind: "hist", startIdx: range.firstIdx + i });
+      startYears.push(path.histStartYear);
+      terminals.push(path.terminal);
+    }
+    return rememberHistWindows(a, range.nWin, rankHistWindows(startYears, terminals));
+  }
+
+  function summariseSim(a, yearBuckets, terminals, extra) {
+    const p10 = [];
+    const p50 = [];
+    const p90 = [];
+    const min = [];
+    const max = [];
+    for (const bucket of yearBuckets) {
+      bucket.sort((x, y) => x - y);
+      p10.push(percentile(bucket, 0.10));
+      p50.push(percentile(bucket, 0.50));
+      p90.push(percentile(bucket, 0.90));
+      min.push(bucket[0] || 0);
+      max.push(bucket[bucket.length - 1] || 0);
+    }
+    const n = terminals.length;
+    const successes = terminals.filter((t) => t > RUIN_EPS).length;
+    let depleteAge = null;
+    let depleteAgeWorst = null;
+    const years = a.horizonAge - a.currentAge;
+    const ages = Array.from({ length: years + 1 }, (_, k) => a.currentAge + k);
+    for (let y = 0; y < p10.length; y++) {
+      if (ages[y] >= a.retireAge && p10[y] <= RUIN_EPS) {
+        depleteAge = ages[y];
+        break;
+      }
+    }
+    for (let y = 0; y < min.length; y++) {
+      if (ages[y] >= a.retireAge && min[y] <= RUIN_EPS) {
+        depleteAgeWorst = ages[y];
+        break;
+      }
+    }
+    return Object.assign({
+      ages,
+      p10,
+      p50,
+      p90,
+      min,
+      max,
+      pathCount: n,
+      successRate: n ? (successes / n) * 100 : 0,
+      medianTerminal: p50[p50.length - 1] || 0,
+      depleteAge,
+      depleteAgeWorst,
+      spend: a.spend,
+      targetSuccess: a.targetSuccess
+    }, extra || {});
+  }
+
+  function runMonteCarlo(onProgress, onDone) {
+    const a = assumptions();
+    const err = validateAssumptions(a);
+    if (err) {
+      onDone(null, err);
+      return;
+    }
+    const assets = AppState.assets;
+    const incomes = AppState.incomes;
+    const years = a.horizonAge - a.currentAge;
+    const yearBuckets = Array.from({ length: years + 1 }, () => []);
+    const terminals = [];
+    const replayModes = [];
+    let i = 0;
+
+    function chunk() {
+      const end = Math.min(MC_PATHS, i + MC_CHUNK);
+      for (; i < end; i++) {
+        spareNorm = null;
+        const series = rollGbmSeries(assets, a, years + 1);
+        const mode = { kind: "replay", series };
+        replayModes.push(mode);
+        const path = projectPath(a, assets, incomes, mode);
+        terminals.push(path.terminal);
+        for (let y = 0; y < path.totals.length; y++) yearBuckets[y].push(path.totals[y]);
+      }
+      onProgress(i, MC_PATHS);
+      if (i < MC_PATHS) {
+        requestAnimationFrame(chunk);
+      } else {
+        const gbmSpend90 = findSpendAtSuccess(a, assets, incomes, replayModes, a.targetSuccess / 100);
+        onDone(summariseSim(a, yearBuckets, terminals, {
+          mode: "gbm",
+          spend90: gbmSpend90
+        }));
+      }
+    }
+    requestAnimationFrame(chunk);
+  }
+
+  function runHistorical(onProgress, onDone) {
+    const a = assumptions();
+    const err = validateAssumptions(a);
+    if (err) {
+      onDone(null, err);
+      return;
+    }
+    const years = a.horizonAge - a.currentAge;
+    const windowLen = years + 1;
+    const range = histWindowRange(windowLen, a.histFromYear);
+    if (range.nWin < 1) {
+      onDone(null, histSampleError(windowLen, range));
+      return;
+    }
+    const assets = AppState.assets;
+    const incomes = AppState.incomes;
+    const yearBuckets = Array.from({ length: windowLen }, () => []);
+    const terminals = [];
+    const startYears = [];
+    let i = 0;
+    const chunkSize = Math.max(8, MC_CHUNK);
+
+    function chunk() {
+      const end = Math.min(range.nWin, i + chunkSize);
+      for (; i < end; i++) {
+        const path = projectPath(a, assets, incomes, { kind: "hist", startIdx: range.firstIdx + i });
+        terminals.push(path.terminal);
+        startYears.push(path.histStartYear);
+        for (let y = 0; y < path.totals.length; y++) yearBuckets[y].push(path.totals[y]);
+      }
+      onProgress(i, range.nWin);
+      if (i < range.nWin) {
+        requestAnimationFrame(chunk);
+      } else {
+        const ranked = rankHistWindows(startYears, terminals);
+        rememberHistWindows(a, range.nWin, ranked);
+        const histModes = Array.from({ length: range.nWin }, (_, k) => ({ kind: "hist", startIdx: range.firstIdx + k }));
+        const spend90 = findSpendAtSuccess(a, assets, incomes, histModes, a.targetSuccess / 100);
+        onDone(summariseSim(a, yearBuckets, terminals, {
+          mode: "hist",
+          worstStartYear: ranked.worstStartYear,
+          bestStartYear: ranked.bestStartYear,
+          sampleStart: range.sampleStart,
+          sampleEnd: range.sampleEnd,
+          spend90: spend90
+        }));
+      }
+    }
+    requestAnimationFrame(chunk);
+  }
+
+  /* ---------- charts ---------- */
+  let percentileChart = null;
+  let incomeChart = null;
+
+  function chartDefaults() {
+    Chart.defaults.font.family = '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif';
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = "#64748b";
+    Chart.defaults.animation = false;
+    Chart.defaults.plugins.legend.labels.usePointStyle = true;
+    Chart.defaults.plugins.legend.labels.pointStyleWidth = 10;
+  }
+
+  function renderPercentileChart(ages, series, spend) {
+    const ctx = document.getElementById("percentileChart");
+    const datasets = [];
+    if (series.max) {
+      datasets.push({
+        label: "Best (max)",
+        data: series.max,
+        borderColor: "#047857",
+        backgroundColor: "transparent",
+        fill: false,
+        borderWidth: 1,
+        borderDash: [3, 3],
+        pointRadius: 0,
+        tension: 0.15,
+        yAxisID: "y"
+      });
+    }
+    if (series.p90) {
+      datasets.push({
+        label: "90th percentile",
+        data: series.p90,
+        borderColor: "#059669",
+        backgroundColor: "rgba(5,150,105,0.08)",
+        fill: "+1",
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0.15,
+        yAxisID: "y"
+      });
+    }
+    if (series.p50) {
+      datasets.push({
+        label: "50th percentile (median)",
+        data: series.p50,
+        borderColor: "#0f172a",
+        backgroundColor: "transparent",
+        fill: false,
+        borderWidth: 2.25,
+        pointRadius: 0,
+        tension: 0.15,
+        yAxisID: "y"
+      });
+    }
+    if (series.p10) {
+      datasets.push({
+        label: "10th percentile",
+        data: series.p10,
+        borderColor: "#be123c",
+        backgroundColor: "rgba(190,18,60,0.06)",
+        fill: false,
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0.15,
+        yAxisID: "y"
+      });
+    }
+    if (series.min) {
+      datasets.push({
+        label: "Worst (min)",
+        data: series.min,
+        borderColor: "#9f1239",
+        backgroundColor: "transparent",
+        fill: false,
+        borderWidth: 1,
+        borderDash: [3, 3],
+        pointRadius: 0,
+        tension: 0.15,
+        yAxisID: "y"
+      });
+    }
+    if (series.deterministic && !series.p50) {
+      datasets.push({
+        label: "Deterministic path",
+        data: series.deterministic,
+        borderColor: "#0b1220",
+        backgroundColor: "rgba(11,18,32,0.05)",
+        fill: true,
+        borderWidth: 2.4,
+        pointRadius: 0,
+        tension: 0.18,
+        yAxisID: "y"
+      });
+    }
+    datasets.push({
+      label: "Net withdrawal",
+      data: ages.map(() => spend),
+      borderColor: "#d97706",
+      borderDash: [6, 4],
+      borderWidth: 1.5,
+      pointRadius: 0,
+      yAxisID: "y1"
+    });
+
+    const config = {
+      type: "line",
+      data: { labels: ages, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { position: "bottom", labels: { boxWidth: 12, padding: 16, usePointStyle: true } },
+          tooltip: {
+            backgroundColor: "rgba(11,18,32,0.92)",
+            padding: 10,
+            callbacks: {
+              label: (c) => " " + c.dataset.label + ": " + gbp(c.parsed.y)
+            }
+          }
+        },
+        scales: {
+          x: { title: { display: true, text: "Age" }, grid: { color: "rgba(15,23,42,0.05)" }, border: { display: false } },
+          y: {
+            title: { display: true, text: "Portfolio (real £)" },
+            ticks: { callback: (v) => gbp(v) },
+            grid: { color: "rgba(15,23,42,0.07)" },
+            border: { display: false },
+            beginAtZero: true
+          },
+          y1: {
+            position: "right",
+            title: { display: true, text: "Net withdrawal (real £)" },
+            ticks: { callback: (v) => gbp(v) },
+            grid: { drawOnChartArea: false },
+            border: { display: false },
+            beginAtZero: true
+          }
+        }
+      }
+    };
+
+    if (percentileChart) {
+      percentileChart.data.labels = ages;
+      percentileChart.data.datasets = datasets;
+      percentileChart.update();
+    } else {
+      percentileChart = new Chart(ctx, config);
+    }
+  }
+
+  function renderIncomeChart(ages, breakdowns, retireAge, spend) {
+    const ctx = document.getElementById("incomeChart");
+    const mk = (label, key, color) => ({
+      type: "bar",
+      label,
+      data: breakdowns.map((b) => b[key] || 0),
+      backgroundColor: color,
+      borderWidth: 0,
+      borderRadius: 2,
+      stack: "inc",
+      order: 2
+    });
+    const netReceived = breakdowns.map((b) => {
+      const gross = (b.ukState || 0) + (b.otherIncome || 0) + (b.isa || 0) + (b.gia || 0) + (b.sipp || 0) + (b.us401k || 0);
+      return Math.max(0, gross - (b.tax || 0));
+    });
+    const datasets = [
+      mk("State Pension", "ukState", "#1e3a5f"),
+      mk("DB / foreign", "otherIncome", "#3b6d9a"),
+      mk("ISA", "isa", "#0f766e"),
+      mk("GIA / cash", "gia", "#ca8a04"),
+      mk("SIPP", "sipp", "#7c3aed"),
+      mk("401(k) / IRA", "us401k", "#be123c"),
+      {
+        type: "line",
+        label: "Net withdrawal",
+        data: ages.map(() => spend),
+        borderColor: "#d97706",
+        borderDash: [6, 4],
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false,
+        order: 0,
+        stack: "netTarget"
+      },
+      {
+        type: "line",
+        label: "Net after tax",
+        data: netReceived,
+        borderColor: "#0f172a",
+        borderWidth: 1.75,
+        pointRadius: 0,
+        fill: false,
+        order: 1,
+        stack: "netReceived"
+      }
+    ];
+    const config = {
+      type: "bar",
+      data: { labels: ages, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { position: "bottom", labels: { boxWidth: 12, padding: 16, usePointStyle: true } },
+          tooltip: {
+            callbacks: {
+              label: (c) => " " + c.dataset.label + ": " + gbp(c.parsed.y)
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            title: { display: true, text: "Age" },
+            grid: { display: false },
+            ticks: {
+              callback: function (val, idx) {
+                const age = ages[idx];
+                if (age === retireAge || age % 5 === 0) return age;
+                return "";
+              }
+            }
+          },
+          y: {
+            stacked: true,
+            title: { display: true, text: "£ real (bars gross · lines net)" },
+            ticks: { callback: (v) => gbp(v) },
+            grid: { color: "rgba(15,23,42,0.06)" },
+            beginAtZero: true
+          }
+        }
+      }
+    };
+    if (incomeChart) {
+      incomeChart.data.labels = ages;
+      incomeChart.data.datasets = datasets;
+      incomeChart.update();
+    } else {
+      incomeChart = new Chart(ctx, config);
+    }
+  }
+
+  function cellGbp(v) {
+    if (!v || Math.abs(v) < 0.5) return "—";
+    return gbp(v);
+  }
+
+  function renderCashflowTable(ages, breakdowns, retireAge) {
+    const wrap = document.getElementById("cashflowTableWrap");
+    const rows = [];
+    for (let i = 0; i < ages.length; i++) {
+      if (ages[i] < retireAge) continue;
+      const b = breakdowns[i] || emptyBreakdown();
+      const short = b.shortfall > 0.5
+        ? `<td class="px-2 py-1.5 text-right text-rose-700">${gbp(b.shortfall)}</td>`
+        : `<td class="px-2 py-1.5 text-right text-slate-400">—</td>`;
+      rows.push(`<tr class="border-t border-slate-100 hover:bg-slate-50">
+        <td class="px-2 py-1.5 font-medium text-slate-800">${ages[i]}</td>
+        <td class="px-2 py-1.5 text-right">${cellGbp(b.ukState)}</td>
+        <td class="px-2 py-1.5 text-right">${cellGbp(b.otherIncome)}</td>
+        <td class="px-2 py-1.5 text-right">${cellGbp(b.isa)}</td>
+        <td class="px-2 py-1.5 text-right">${cellGbp(b.gia)}</td>
+        <td class="px-2 py-1.5 text-right">${cellGbp(b.sipp)}</td>
+        <td class="px-2 py-1.5 text-right">${cellGbp(b.us401k)}</td>
+        <td class="px-2 py-1.5 text-right font-medium">${cellGbp(b.gross)}</td>
+        <td class="px-2 py-1.5 text-right ${b.tax > 0.5 ? "text-rose-800" : "text-slate-400"}">${cellGbp(b.tax)}</td>
+        <td class="px-2 py-1.5 text-right font-medium text-ink-900">${cellGbp(b.net)}</td>
+        ${short}
+      </tr>`);
+    }
+    if (!rows.length) {
+      wrap.innerHTML = '<p class="p-3 text-xs text-slate-500">No drawdown years in the current age range.</p>';
+      return;
+    }
+    wrap.innerHTML = `
+      <table class="cashflow-table w-full min-w-[720px] text-left text-[11px] text-slate-600">
+        <thead>
+          <tr>
+            <th class="px-2 py-2 font-semibold text-slate-700">Age</th>
+            <th class="px-2 py-2 text-right font-semibold text-slate-700">State</th>
+            <th class="px-2 py-2 text-right font-semibold text-slate-700">DB / foreign</th>
+            <th class="px-2 py-2 text-right font-semibold text-slate-700">ISA</th>
+            <th class="px-2 py-2 text-right font-semibold text-slate-700">GIA</th>
+            <th class="px-2 py-2 text-right font-semibold text-slate-700">SIPP</th>
+            <th class="px-2 py-2 text-right font-semibold text-slate-700">401(k)</th>
+            <th class="px-2 py-2 text-right font-semibold text-slate-700">Gross</th>
+            <th class="px-2 py-2 text-right font-semibold text-slate-700">Tax</th>
+            <th class="px-2 py-2 text-right font-semibold text-slate-700">Net</th>
+            <th class="px-2 py-2 text-right font-semibold text-slate-700">Shortfall</th>
+          </tr>
+        </thead>
+        <tbody>${rows.join("")}</tbody>
+      </table>`;
+  }
+
+  function successPctFrom(result) {
+    if (result && result.targetSuccess != null) return result.targetSuccess;
+    const el = document.getElementById("targetSuccess");
+    return clampTargetSuccess(el ? el.value : DEFAULT_TARGET_SUCCESS);
+  }
+
+  function setSpendTargetHeading(pct) {
+    const title = document.getElementById("kpiSpend90Title");
+    if (title) title.textContent = successLabel(pct) + " success withdrawal";
+  }
+
+  function spendTargetNote(pct, extra) {
+    const base = extra
+      ? "Constant real net · ≥" + successLabel(pct) + " success · " + extra
+      : "Highest constant real net withdrawal with ≥" + successLabel(pct) + " success";
+    return base;
+  }
+
+  function setKpis(result) {
+    const sEl = document.getElementById("kpiSuccess");
+    const mEl = document.getElementById("kpiMedian");
+    const rEl = document.getElementById("kpiRuin");
+    const rWorst = document.getElementById("kpiRuinWorst");
+    const rNote = document.getElementById("kpiRuinNote");
+    const pEl = document.getElementById("kpiSpend90");
+    const pNote = document.getElementById("kpiSpend90Note");
+    const targetPct = successPctFrom(result);
+    setSpendTargetHeading(targetPct);
+    if (!result) {
+      sEl.textContent = "—";
+      mEl.textContent = "—";
+      rEl.textContent = "—";
+      if (rWorst) {
+        rWorst.textContent = "Worst case —";
+        rWorst.className = "kpi-value mt-1 text-sm font-semibold text-slate-400";
+      }
+      if (rNote) rNote.textContent = "10th percentile · run a simulation for worst case";
+      if (pEl) pEl.textContent = "—";
+      if (pNote) pNote.textContent = spendTargetNote(targetPct);
+      sEl.className = "kpi-value mt-2 text-3xl font-semibold text-slate-400";
+      mEl.className = "kpi-value mt-2 text-3xl font-semibold text-slate-400";
+      rEl.className = "kpi-value mt-2 text-3xl font-semibold text-slate-400";
+      if (pEl) pEl.className = "kpi-value mt-2 text-3xl font-semibold text-slate-400";
+      return;
+    }
+    sEl.textContent = result.successRate.toFixed(1) + "%";
+    mEl.textContent = gbp(result.medianTerminal);
+    rEl.textContent = result.depleteAge == null ? "Does not deplete" : "Age " + result.depleteAge;
+    if (rWorst) {
+      if (result.depleteAgeWorst == null) {
+        rWorst.textContent = "Worst case holds to horizon";
+        rWorst.className = "kpi-value mt-1 text-sm font-semibold text-emerald-800";
+      } else {
+        rWorst.textContent = "Worst case age " + result.depleteAgeWorst;
+        rWorst.className = "kpi-value mt-1 text-sm font-semibold text-rose-800";
+      }
+    }
+    if (rNote) {
+      rNote.textContent = result.depleteAge == null
+        ? "10th-percentile path still has money at the horizon"
+        : "First age the 10th-percentile path is empty";
+    }
+    const tone = result.successRate >= 80 ? "text-emerald-700" : result.successRate >= 60 ? "text-amber-700" : "text-rose-700";
+    sEl.className = "kpi-value mt-2 text-3xl font-semibold " + tone;
+    mEl.className = "kpi-value mt-2 text-3xl font-semibold text-ink-900";
+    rEl.className = "kpi-value mt-2 text-3xl font-semibold text-ink-900";
+    if (pEl) {
+      if (result.spend90 == null || !Number.isFinite(result.spend90)) {
+        pEl.textContent = "—";
+        pEl.className = "kpi-value mt-2 text-3xl font-semibold text-slate-400";
+        if (pNote) pNote.textContent = spendTargetNote(targetPct);
+      } else {
+        pEl.textContent = gbp(result.spend90);
+        const vs = result.spend - result.spend90;
+        let vsText;
+        if (Math.abs(vs) < 50) vsText = "Matches your net withdrawal";
+        else if (vs > 0) vsText = gbp(vs) + " below your £" + Math.round(result.spend).toLocaleString("en-GB") + " net withdrawal";
+        else vsText = gbp(-vs) + " above your £" + Math.round(result.spend).toLocaleString("en-GB") + " net withdrawal";
+        if (pNote) pNote.textContent = spendTargetNote(targetPct, vsText);
+        pEl.className = "kpi-value mt-2 text-3xl font-semibold " +
+          (result.spend90 + 50 >= result.spend ? "text-emerald-700" : "text-amber-700");
+      }
+    }
+  }
+
+  function renderAgeSnapshots(ages, totals, currentAge, mc) {
+    const host = document.getElementById("ageSnapshotCards");
+    const hint = document.getElementById("ageSnapshotHint");
+    if (!host) return;
+    const today = todayPotGbp();
+    const useMc = !!(mc && !mcStale && mc.p50 && mc.min && mc.max);
+    if (hint) {
+      const n = useMc ? (mc.pathCount || 1000) : 0;
+      const hist = useMc && mc.mode === "hist";
+      hint.textContent = useMc
+        ? (hist
+          ? "Min / median / max across " + n.toLocaleString("en-GB") + " historical market windows · median vs today"
+          : "Min / median / max across " + n.toLocaleString("en-GB") + " GBM paths · median vs today")
+        : "Deterministic median · replay historical markets or run GBM for min / max";
+    }
+    const cards = [
+      { title: "Today (age " + currentAge + ")", age: currentAge, value: today, isToday: true },
+      { title: "Age 70", age: 70 },
+      { title: "Age 75", age: 75 },
+      { title: "Age 80", age: 80 },
+      { title: "Age 85", age: 85 },
+      { title: "Age 90", age: 90 }
+    ];
+    host.innerHTML = cards.map((card) => {
+      let median = card.value;
+      let minV = null;
+      let maxV = null;
+      if (!card.isToday) {
+        if (card.age < currentAge) median = null;
+        else {
+          const idx = ages.indexOf(card.age);
+          const mcIdx = useMc && mc.ages ? mc.ages.indexOf(card.age) : -1;
+          if (mcIdx >= 0) {
+            median = mc.p50[mcIdx];
+            minV = mc.min[mcIdx];
+            maxV = mc.max[mcIdx];
+          } else {
+            median = idx >= 0 ? totals[idx] : null;
+          }
+        }
+      }
+      const missing = !Number.isFinite(median);
+      const delta = missing || card.isToday ? null : median - today;
+      const deltaClass = delta == null ? "text-slate-400" : delta > 0.5 ? "text-emerald-700" : delta < -0.5 ? "text-rose-700" : "text-slate-500";
+      const deltaText = card.isToday ? "Starting pot (as entered)" : delta == null ? "Outside the plan horizon" : gbpDelta(delta) + " vs today";
+      const range = card.isToday || minV == null || maxV == null
+        ? (card.isToday ? "" : `<p class="mt-2 text-[11px] text-slate-400">${missing ? "" : "Run simulation for min / max"}</p>`)
+        : `<div class="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+            <div><p class="uppercase tracking-wide text-slate-400">Min</p><p class="kpi-value font-medium text-rose-800">${gbp(minV)}</p></div>
+            <div><p class="uppercase tracking-wide text-slate-400">Max</p><p class="kpi-value font-medium text-emerald-800">${gbp(maxV)}</p></div>
+          </div>`;
+      return `<article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">${card.title}</p>
+        <p class="kpi-value mt-2 text-2xl font-semibold ${missing ? "text-slate-400" : "text-ink-900"}">${missing ? "—" : gbp(median)}</p>
+        <p class="text-[11px] text-slate-500">${missing || card.isToday ? "" : "Median"}</p>
+        ${range}
+        <p class="mt-1 text-[11px] ${deltaClass}">${deltaText}</p>
+      </article>`;
+    }).join("");
+  }
+
+  /* ---------- UI rows ---------- */
+  function assetRowHtml(a) {
+    const isFx = a.type === "us401k";
+    const isGia = a.type === "cash" || a.type === "gia";
+    return `
+      <div class="rounded-lg border border-slate-200 bg-slate-50/70 p-3" data-asset-id="${a.id}">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold text-slate-700">${ASSET_META[a.type].label}</span>
+          <button type="button" data-remove-asset="${a.id}" class="text-xs text-slate-500 hover:text-rose-700">Remove</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <label class="col-span-2 sm:col-span-2">
+            <span class="lbl">Name</span>
+            <input class="field" data-field="name" type="text" autocomplete="off" spellcheck="false" dir="ltr" aria-label="Name" value="${escapeAttr(a.name)}" />
+          </label>
+          <label>
+            <span class="lbl">${isFx ? "Value (native)" : "Value £"} ${fieldHelp(
+              isFx
+                ? "Today’s balance in the account’s own currency. Converted to pounds using the FX rate."
+                : "Today’s balance of this pot, in pounds.",
+              isFx ? "About native value" : "About pot value"
+            )}</span>
+            <input class="field font-mono" data-field="value" data-numeric type="text" inputmode="decimal" autocomplete="off" spellcheck="false" dir="ltr" aria-label="${isFx ? "Value (native)" : "Value £"}" value="${escapeAttr(a.value)}" />
+          </label>
+          <label>
+            <span class="lbl">Return % ${fieldHelp("Optional nominal return for this pot. Leave blank to use the global expected return. In historical replay, invested pots follow market history instead of this rate.", "About pot return")}</span>
+            <input class="field font-mono" data-field="returnPct" data-numeric type="text" autocomplete="off" spellcheck="false" dir="ltr" placeholder="Global" aria-label="Return %" value="${escapeAttr(a.returnPct)}" />
+          </label>
+          <label>
+            <span class="lbl">Annual contribution ${fieldHelp("Added each year until retirement, in the same units as the pot value and in today’s money.", "About annual contribution")}</span>
+            <input class="field font-mono" data-field="contribution" data-numeric type="text" autocomplete="off" spellcheck="false" dir="ltr" aria-label="Annual contribution" value="${escapeAttr(a.contribution)}" />
+          </label>
+          ${isFx ? `
+          <label>
+            <span class="lbl">Currency ${fieldHelp("Type any currency this pot is held in (USD, EUR, SEK, CHF, JPY, …). The value above is in this currency.", "About currency")}</span>
+            <input class="field" data-field="currency" type="text" maxlength="12" autocomplete="off" spellcheck="false" dir="ltr" placeholder="USD" aria-label="Currency" value="${escapeAttr(a.currency || "")}" />
+          </label>
+          <label>
+            <span class="lbl">FX (GBP per 1 unit) ${fieldHelp("Pounds sterling per 1 unit of the currency you typed. Example: 0.78 means $1 = 78p; 0.072 means 1 SEK ≈ 7.2p. Use 1 if the pot is already in pounds.", "About FX rate")}</span>
+            <input class="field font-mono" data-field="fx" data-numeric type="text" autocomplete="off" spellcheck="false" dir="ltr" value="${escapeAttr(a.fx)}" />
+          </label>
+          <div class="col-span-2">
+            <span class="lbl">Drawdown from ${fieldHelp("Not typed in. Discretionary 401(k) withdrawals follow your withdrawal order. Required minimum distributions still start at age 73 if anything remains.", "About 401(k) drawdown age")}</span>
+            <div class="rounded-md border border-slate-200 bg-white px-2 py-1.5">
+              <p class="text-sm font-medium text-slate-800" data-us401k-start-age>—</p>
+              <p class="text-[11px] leading-snug text-slate-500" data-us401k-start-note></p>
+            </div>
+          </div>` : ""}
+          ${isGia ? `
+          <label>
+            <span class="lbl">Taxable yield % ${fieldHelp("Extra income treated as taxable (interest or dividends). It is added to your tax bill; the pot is not reduced by this yield on its own.", "About taxable yield")}</span>
+            <input class="field font-mono" data-field="taxableYieldPct" data-numeric type="text" autocomplete="off" spellcheck="false" dir="ltr" value="${escapeAttr(a.taxableYieldPct)}" />
+          </label>` : ""}
+          ${a.type === "sipp" ? (() => {
+            const split = sippSplitDisplay(a);
+            return `
+          <label>
+            <span class="lbl">Tax-free left £ ${fieldHelp("How much of this SIPP can still come out tax-free. Enter 0 if you have already taken the tax-free lump sum (PCLS). Leave at 25% of the pot if you have not taken any. Still capped by the £268,275 Lump Sum Allowance across all SIPPs.", "About SIPP tax-free cash")}</span>
+            <input class="field font-mono" data-field="sippTaxFree" data-numeric type="text" inputmode="decimal" autocomplete="off" spellcheck="false" dir="ltr" aria-label="Tax-free left £" value="${escapeAttr(hasExplicitSippTaxFree(a) ? a.sippTaxFree : split.taxFree)}" />
+          </label>
+          <label>
+            <span class="lbl">Taxable £ ${fieldHelp("The rest of this SIPP, treated as taxable income when withdrawn. Tax-free plus taxable should equal the pot value. Changing one updates the other.", "About SIPP taxable amount")}</span>
+            <input class="field font-mono" data-field="sippTaxable" data-numeric type="text" inputmode="decimal" autocomplete="off" spellcheck="false" dir="ltr" aria-label="Taxable £" value="${escapeAttr(split.taxable)}" />
+          </label>
+          <p class="col-span-2 text-[11px] text-slate-500">Tax-free plus taxable should equal the pot. The mix grows with the pot and is capped by the £268,275 LSA.</p>`;
+          })() : ""}
+        </div>
+      </div>`;
+  }
+
+  function incomeRowHtml(inc) {
+    const isForeign = inc.type === "foreignState";
+    const isDb = inc.type === "db";
+    return `
+      <div class="rounded-lg border border-slate-200 bg-slate-50/70 p-3" data-income-id="${inc.id}">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold text-slate-700">${INCOME_META[inc.type].label}</span>
+          <button type="button" data-remove-income="${inc.id}" class="text-xs text-slate-500 hover:text-rose-700">Remove</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <label class="col-span-2">
+            <span class="lbl">Name</span>
+            <input class="field" data-field="name" type="text" autocomplete="off" spellcheck="false" dir="ltr" aria-label="Name" value="${escapeAttr(inc.name)}" />
+          </label>
+          <label>
+            <span class="lbl">${isForeign ? "Amount (native)" : "Amount £ / year"} ${fieldHelp(
+              isForeign
+                ? "Annual income in the foreign currency, converted to pounds with the FX rate. Entered in today’s money."
+                : "Annual income in today’s pounds. UK State Pension is treated as inflation-linked (constant real).",
+              isForeign ? "About native income amount" : "About income amount"
+            )}</span>
+            <input class="field font-mono" data-field="amount" data-numeric type="text" inputmode="decimal" autocomplete="off" spellcheck="false" dir="ltr" value="${escapeAttr(inc.amount)}" />
+          </label>
+          <label>
+            <span class="lbl">Start age ${fieldHelp("Age when this income begins. Nothing is paid before then.", "About income start age")}</span>
+            <input class="field font-mono" data-field="startAge" data-numeric type="text" autocomplete="off" spellcheck="false" dir="ltr" value="${escapeAttr(inc.startAge)}" />
+          </label>
+          ${isForeign ? `
+          <label>
+            <span class="lbl">Currency ${fieldHelp("Type any currency this income is paid in (SEK, EUR, USD, CHF, …). The amount above is in this currency.", "About income currency")}</span>
+            <input class="field" data-field="currency" type="text" maxlength="12" autocomplete="off" spellcheck="false" dir="ltr" placeholder="SEK" aria-label="Income currency" value="${escapeAttr(inc.currency || "")}" />
+          </label>
+          <label>
+            <span class="lbl">FX (GBP per 1 unit) ${fieldHelp("Pounds sterling per 1 unit of the currency you typed. Example: 0.072 means 1 SEK ≈ 7.2p; 0.86 means €1 = 86p. Use 1 if you entered the amount in pounds.", "About income FX rate")}</span>
+            <input class="field font-mono" data-field="fx" data-numeric type="text" autocomplete="off" spellcheck="false" dir="ltr" value="${escapeAttr(inc.fx)}" />
+          </label>
+          <label>
+            <span class="lbl">UK tax status ${fieldHelp("Taxable in UK is added to UK taxable income. Treaty-exempt is received but not taxed in this model. Foreign tax credits are not modelled.", "About UK tax status")}</span>
+            <select class="field" data-field="taxStatus">
+              <option value="taxable" ${inc.taxStatus === "taxable" ? "selected" : ""}>Taxable in UK</option>
+              <option value="exempt" ${inc.taxStatus === "exempt" ? "selected" : ""}>Treaty-exempt</option>
+            </select>
+          </label>` : ""}
+          ${isDb ? `
+          <label>
+            <span class="lbl">Indexation % ${fieldHelp("How this defined-benefit pension grows each year. If it equals inflation, the real amount stays the same.", "About DB indexation")}</span>
+            <input class="field font-mono" data-field="indexationPct" data-numeric type="text" autocomplete="off" spellcheck="false" dir="ltr" value="${escapeAttr(inc.indexationPct)}" />
+          </label>` : ""}
+        </div>
+      </div>`;
+  }
+
+  function escapeAttr(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;");
+  }
+
+  function fieldHelp(text, aria) {
+    return `<button type="button" class="help-tip" data-help="${escapeAttr(text)}" aria-label="${escapeAttr(aria)}" aria-expanded="false">?</button>`;
+  }
+
+  function renderAssets() {
+    document.getElementById("assetList").innerHTML = AppState.assets.map(assetRowHtml).join("") ||
+      '<p class="text-xs text-slate-500">No investment pots. Add at least one to project a portfolio.</p>';
+    update401kStartDisplay(null, null);
+  }
+
+  function renderIncomes() {
+    document.getElementById("incomeList").innerHTML = AppState.incomes.map(incomeRowHtml).join("") ||
+      '<p class="text-xs text-slate-500">No guaranteed income streams.</p>';
+  }
+
+  function us401kOrderNote() {
+    const ctx = orderContext("us401k");
+    const drawAge = PathHints.us401kDrawAge;
+    if (drawAge != null) {
+      return "Draws from age " + drawAge + " in this order · RMDs from " + DEFAULT_RMD_AGE + " if still invested";
+    }
+    if (ctx && ctx.idx === 0) return "Drawn from retirement · RMDs from " + DEFAULT_RMD_AGE + " if still invested";
+    if (ctx && ctx.before.length) return "After " + ctx.before.join(" → ") + " · RMDs from " + DEFAULT_RMD_AGE + " if still invested";
+    return ORDER_META.us401k.note;
+  }
+
+  function renderOrder() {
+    const list = document.getElementById("orderList");
+    const order = AppState.withdrawalOrder;
+    list.innerHTML = order.map((key, idx) => {
+      const meta = ORDER_META[key];
+      const note = key === "us401k" ? us401kOrderNote() : meta.note;
+      return `
+        <li class="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2" data-order-key="${key}">
+          <span class="w-5 shrink-0 font-mono text-xs font-semibold text-slate-500">${idx + 1}</span>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-semibold text-slate-800">${meta.label}</p>
+            <p class="text-[11px] text-slate-500">${note}</p>
+          </div>
+          <div class="flex shrink-0 gap-1">
+            <button type="button" data-order-move="-1" data-order-idx="${idx}" class="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-800 hover:bg-slate-50 disabled:opacity-30" ${idx === 0 ? "disabled" : ""} aria-label="Move ${meta.label} earlier">Up</button>
+            <button type="button" data-order-move="1" data-order-idx="${idx}" class="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-800 hover:bg-slate-50 disabled:opacity-30" ${idx === order.length - 1 ? "disabled" : ""} aria-label="Move ${meta.label} later">Down</button>
+          </div>
+        </li>`;
+    }).join("");
+  }
+
+  function moveOrder(idx, delta) {
+    const next = idx + delta;
+    const order = AppState.withdrawalOrder;
+    if (next < 0 || next >= order.length) return;
+    const copy = order.slice();
+    const tmp = copy[idx];
+    copy[idx] = copy[next];
+    copy[next] = tmp;
+    AppState.withdrawalOrder = copy;
+    if (orderContext("us401k")?.idx !== 0) {
+      PathHints.us401kDrawAge = null;
+      PathHints.us401kResolved = false;
+    }
+    update401kStartDisplay(null, null);
+    renderOrder();
+    scheduleDeterministic();
+  }
+
+  function applyOrderPreset(name) {
+    AppState.withdrawalOrder = ORDER_PRESETS[name].slice();
+    if (orderContext("us401k")?.idx !== 0) {
+      PathHints.us401kDrawAge = null;
+      PathHints.us401kResolved = false;
+    }
+    update401kStartDisplay(null, null);
+    renderOrder();
+    scheduleDeterministic();
+  }
+
+  function defaultAsset(type) {
+    const base = { id: uid(), type, name: ASSET_META[type].label, value: 0, currency: "GBP", fx: 1, returnPct: "", contribution: 0, rmdAge: 73, taxableYieldPct: type === "cash" ? 3 : 2 };
+    if (type === "us401k") { base.currency = "USD"; base.fx = 0.78; base.value = 150000; base.name = "US 401(k)"; }
+    if (type === "isa") base.value = 25000;
+    if (type === "sipp") { base.value = 50000; base.sippTaxFree = 12500; }
+    if (type === "gia") base.value = 25000;
+    if (type === "cash") base.value = 10000;
+    return base;
+  }
+
+  function defaultIncome(type) {
+    const base = { id: uid(), type, name: INCOME_META[type].label, amount: 0, currency: "GBP", fx: 1, startAge: 67, indexationPct: 2.5, taxStatus: "taxable" };
+    if (type === "ukState") { base.amount = 11973; base.startAge = 67; }
+    if (type === "foreignState") { base.amount = 12000; base.currency = "EUR"; base.fx = 0.86; base.startAge = 65; }
+    if (type === "db") { base.amount = 8000; base.startAge = 65; base.indexationPct = 2.5; }
+    return base;
+  }
+
+  /* ---------- bind & refresh ---------- */
+  let detTimer = null;
+  let mcStale = true;
+
+  function scheduleDeterministic() {
+    persist();
+    clearTimeout(detTimer);
+    detTimer = setTimeout(runDeterministic, 180);
+    if (!mcStale) {
+      mcStale = true;
+      document.getElementById("chartHint").textContent = "Inputs changed — re-run Monte Carlo for updated percentiles";
+    }
+  }
+
+  function runDeterministic() {
+    const a = assumptions();
+    const err = validateAssumptions(a);
+    const errEl = document.getElementById("assumptionError");
+    if (err) {
+      errEl.textContent = err;
+      errEl.classList.remove("hidden");
+      return;
+    }
+    errEl.classList.add("hidden");
+    const path = projectPath(a, AppState.assets, AppState.incomes, false);
+    renderPercentileChart(path.ages, MonteCarlo.last && !mcStale
+      ? { p10: MonteCarlo.last.p10, p50: MonteCarlo.last.p50, p90: MonteCarlo.last.p90 }
+      : { deterministic: path.totals }, a.spend);
+    renderIncomeChart(path.ages, path.breakdowns, a.retireAge, a.spend);
+    renderCashflowTable(path.ages, path.breakdowns, a.retireAge);
+    renderAgeSnapshots(path.ages, path.totals, a.currentAge, MonteCarlo.last);
+    update401kStartDisplay(path.ages, path.breakdowns);
+    renderOrder();
+    renderResultsSummary();
+    renderPlanHint();
+    updateSimChrome();
+    if (!MonteCarlo.last) {
+      setSpendTargetHeading(a.targetSuccess);
+      const pNote = document.getElementById("kpiSpend90Note");
+      if (pNote) pNote.textContent = spendTargetNote(a.targetSuccess);
+    }
+    if (currentPage === "results") resizeResultCharts();
+  }
+
+  function syncSippSplitFields(row, field, inputEl) {
+    if (!row || row.type !== "sipp") return;
+    const wrap = inputEl.closest("[data-asset-id]");
+    if (!wrap) return;
+    const value = Math.max(0, num(row.value));
+    const tfInput = wrap.querySelector('[data-field="sippTaxFree"]');
+    const txInput = wrap.querySelector('[data-field="sippTaxable"]');
+    if (field === "sippTaxable") {
+      const tx = Math.min(value, Math.max(0, num(row.sippTaxable)));
+      row.sippTaxFree = Math.round((value - tx) * 100) / 100;
+      row.sippTaxable = Math.round(tx * 100) / 100;
+      if (tfInput) tfInput.value = row.sippTaxFree;
+      if (txInput && String(row.sippTaxable) !== txInput.value) txInput.value = row.sippTaxable;
+      return;
+    }
+    if (field === "sippTaxFree") {
+      if (row.sippTaxFree === "") {
+        const split = sippSplitDisplay(row);
+        if (tfInput) tfInput.value = split.taxFree;
+        if (txInput) txInput.value = split.taxable;
+        return;
+      }
+      const tf = Math.min(value, Math.max(0, num(row.sippTaxFree)));
+      row.sippTaxFree = Math.round(tf * 100) / 100;
+      if (tfInput && String(row.sippTaxFree) !== tfInput.value) tfInput.value = row.sippTaxFree;
+      if (txInput) txInput.value = Math.round((value - tf) * 100) / 100;
+      return;
+    }
+    if (field === "value") {
+      const split = sippSplitDisplay(row);
+      if (hasExplicitSippTaxFree(row)) {
+        row.sippTaxFree = split.taxFree;
+        if (tfInput) tfInput.value = split.taxFree;
+      } else if (tfInput) {
+        tfInput.value = split.taxFree;
+      }
+      if (txInput) txInput.value = split.taxable;
+    }
+  }
+
+  function bindList(containerId, kind) {
+    const el = document.getElementById(containerId);
+    el.addEventListener("input", (e) => {
+      const field = e.target.getAttribute("data-field");
+      if (!field) return;
+      if (kind === "asset") {
+        const id = num(e.target.closest("[data-asset-id]")?.getAttribute("data-asset-id"));
+        const row = AppState.assets.find((x) => x.id === id);
+        if (!row) return;
+        row[field] = e.target.hasAttribute("data-numeric")
+          ? (e.target.value === "" ? "" : e.target.value)
+          : e.target.value;
+        syncSippSplitFields(row, field, e.target);
+      } else {
+        const id = num(e.target.closest("[data-income-id]")?.getAttribute("data-income-id"));
+        const row = AppState.incomes.find((x) => x.id === id);
+        if (!row) return;
+        row[field] = e.target.hasAttribute("data-numeric")
+          ? (e.target.value === "" ? "" : e.target.value)
+          : e.target.value;
+      }
+      scheduleDeterministic();
+    });
+    el.addEventListener("change", (e) => {
+      if (e.target.tagName !== "SELECT") return;
+      const field = e.target.getAttribute("data-field");
+      if (!field) return;
+      if (kind === "asset") {
+        const id = num(e.target.closest("[data-asset-id]")?.getAttribute("data-asset-id"));
+        const row = AppState.assets.find((x) => x.id === id);
+        if (row) row[field] = e.target.value;
+      } else {
+        const id = num(e.target.closest("[data-income-id]")?.getAttribute("data-income-id"));
+        const row = AppState.incomes.find((x) => x.id === id);
+        if (row) row[field] = e.target.value;
+      }
+      scheduleDeterministic();
+    });
+    el.addEventListener("click", (e) => {
+      const ra = e.target.getAttribute("data-remove-asset");
+      const ri = e.target.getAttribute("data-remove-income");
+      if (ra) {
+        AppState.assets = AppState.assets.filter((x) => x.id !== num(ra));
+        renderAssets();
+        scheduleDeterministic();
+      }
+      if (ri) {
+        AppState.incomes = AppState.incomes.filter((x) => x.id !== num(ri));
+        renderIncomes();
+        scheduleDeterministic();
+      }
+    });
+  }
+
+  function renderPlanHint() {
+    const el = document.getElementById("planHint");
+    if (!el) return;
+    const a = assumptions();
+    const years = a.horizonAge - a.currentAge;
+    if (years <= 0 || a.retireAge >= a.horizonAge) {
+      el.textContent = "Check the ages: retirement and current age must be below the horizon.";
+      renderHistFromHint(a);
+      return;
+    }
+    const startText = a.retireAge <= a.currentAge
+      ? "Withdrawals start this year (retirement age is at or below your current age)."
+      : "Withdrawals start at age " + a.retireAge + " (" + (a.retireAge - a.currentAge) + " years from now).";
+    el.textContent = startText + " The plan runs " + years + " years, to age " + a.horizonAge + ".";
+    renderHistFromHint(a);
+  }
+
+  function renderHistFromHint(a) {
+    const hint = document.getElementById("histFromHint");
+    const onCls = "rounded-md bg-ink-900 px-2.5 py-1 text-xs font-medium text-white";
+    const offCls = "rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50";
+    document.querySelectorAll("[data-hist-from]").forEach(function (btn) {
+      btn.className = Number(btn.getAttribute("data-hist-from")) === a.histFromYear ? onCls : offCls;
+    });
+    if (!hint) return;
+    const windowLen = a.horizonAge - a.currentAge + 1;
+    if (windowLen <= 1) {
+      hint.textContent = "";
+      hint.className = "mt-1 text-xs text-slate-600";
+      return;
+    }
+    const range = histWindowRange(windowLen, a.histFromYear);
+    if (range.nWin < 1) {
+      hint.textContent = histSampleError(windowLen, range);
+      hint.className = "mt-1 text-xs text-rose-700";
+      return;
+    }
+    hint.className = "mt-1 text-xs text-slate-600";
+    hint.textContent = "Historical replay will use " + range.nWin.toLocaleString("en-GB") +
+      " overlapping windows with returns " + range.sampleStart + "–" + range.sampleEnd + ".";
+  }
+
+  function simStatusText() {
+    if (MonteCarlo.running) return "Simulation running…";
+    if (!MonteCarlo.last) return "Charts show one expected-return path until you run a simulation.";
+    if (mcStale) return "Inputs changed — re-run to refresh success rate, min / max and the success-target withdrawal.";
+    if (MonteCarlo.last.mode === "hist") {
+      return "Showing " + (MonteCarlo.last.pathCount || 0).toLocaleString("en-GB") +
+        " historical market windows. Re-run after you change inputs.";
+    }
+    return "Showing 1,000 GBM paths. Re-run after you change inputs.";
+  }
+
+  function updateSimChrome() {
+    const bar = document.getElementById("stickyActions");
+    const show = currentPage === "inputs" || currentPage === "results";
+    if (bar) {
+      bar.classList.toggle("hidden", !show);
+      bar.toggleAttribute("hidden", !show);
+    }
+    document.body.classList.toggle("has-sticky-actions", show);
+    const toResults = document.getElementById("stickyGotoResults");
+    const toInputs = document.getElementById("stickyGotoInputs");
+    if (toResults) toResults.classList.toggle("hidden", currentPage !== "inputs");
+    if (toInputs) toInputs.classList.toggle("hidden", currentPage !== "results");
+    const hint = simStatusText();
+    const stickyHint = document.getElementById("stickyHint");
+    if (stickyHint) stickyHint.textContent = hint;
+    const banner = document.getElementById("simBanner");
+    const bannerText = document.getElementById("simBannerText");
+    const needBanner = !MonteCarlo.last || mcStale;
+    if (banner) banner.classList.toggle("hidden", !needBanner);
+    if (bannerText) {
+      bannerText.textContent = !MonteCarlo.last
+        ? "The figures below are a single expected-return path. Use Replay historical markets in the bar at the bottom to see success rate, min / max and the success-target withdrawal."
+        : "Inputs have changed since the last simulation. Re-run historical markets or GBM to refresh success rate, min / max and the success-target withdrawal.";
+    }
+  }
+
+  function setSimButtonsBusy(mode, busy) {
+    document.querySelectorAll("[data-run-hist]").forEach(function (btn) {
+      btn.disabled = busy;
+      btn.textContent = busy && mode === "hist" ? "Replaying markets…" : "Replay historical markets";
+    });
+    document.querySelectorAll("[data-run-gbm]").forEach(function (btn) {
+      btn.disabled = busy;
+      btn.textContent = busy && mode === "gbm" ? "Running GBM…" : "Run 1,000 GBM paths";
+    });
+  }
+
+  function startSim(mode) {
+    if (MonteCarlo.running) return;
+    const a = assumptions();
+    const err = validateAssumptions(a);
+    const errEl = document.getElementById("assumptionError");
+    if (err) {
+      errEl.textContent = err;
+      errEl.classList.remove("hidden");
+      showPage("inputs");
+      errEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    MonteCarlo.running = true;
+    const wrap = document.getElementById("progressWrap");
+    const bar = document.getElementById("progressBar");
+    const lab = document.getElementById("progressLabel");
+    setSimButtonsBusy(mode, true);
+    updateSimChrome();
+    wrap.classList.remove("hidden");
+    bar.style.width = "0%";
+    setKpis(null);
+
+    const runner = mode === "hist" ? runHistorical : runMonteCarlo;
+    runner(
+      (done, total) => {
+        const t = total || (mode === "hist" ? 1 : MC_PATHS);
+        bar.style.width = ((done / t) * 100).toFixed(1) + "%";
+        lab.textContent = done.toLocaleString("en-GB") + " / " + t.toLocaleString("en-GB") +
+          (mode === "hist" ? " market windows" : " paths");
+      },
+      (result, error) => {
+        MonteCarlo.running = false;
+        setSimButtonsBusy(mode, false);
+        wrap.classList.add("hidden");
+        if (error || !result) {
+          updateSimChrome();
+          if (error) {
+            errEl.textContent = error;
+            errEl.classList.remove("hidden");
+            showPage("inputs");
+          }
+          return;
+        }
+        MonteCarlo.last = result;
+        mcStale = false;
+        setKpis(result);
+        const note = document.getElementById("kpiSuccessNote");
+        if (note) {
+          note.textContent = result.mode === "hist"
+            ? "Historical windows with portfolio > £0 at horizon"
+            : "GBM paths with portfolio > £0 at horizon";
+        }
+        if (result.mode === "hist") {
+          document.getElementById("chartHint").textContent =
+            result.pathCount.toLocaleString("en-GB") + " overlapping windows · Shiller S&P real returns " +
+            result.sampleStart + "–" + result.sampleEnd +
+            " · worst start " + result.worstStartYear +
+            " · best start " + result.bestStartYear;
+        } else {
+          document.getElementById("chartHint").textContent = "1,000 GBM paths · 10th / 50th / 90th percentiles · min / max";
+        }
+        renderPercentileChart(result.ages, result, result.spend);
+        const det = projectPath(assumptions(), AppState.assets, AppState.incomes, false);
+        renderAgeSnapshots(det.ages, det.totals, assumptions().currentAge, result);
+        renderResultsSummary();
+        showPage("results");
+      }
+    );
+  }
+
+  let marketHistChart = null;
+  let marketView = "cum";
+
+  function showHelpTab(name) {
+    const useOn = name === "use";
+    const usePanel = document.getElementById("helpPanelUse");
+    const methodPanel = document.getElementById("helpPanelMethod");
+    const useBtn = document.getElementById("helpTabUse");
+    const methodBtn = document.getElementById("helpTabMethod");
+    if (usePanel) {
+      usePanel.classList.toggle("hidden", !useOn);
+      usePanel.toggleAttribute("hidden", !useOn);
+    }
+    if (methodPanel) {
+      methodPanel.classList.toggle("hidden", useOn);
+      methodPanel.toggleAttribute("hidden", useOn);
+    }
+    const onCls = "rounded-md bg-ink-900 px-3 py-1.5 text-xs font-semibold text-white";
+    const offCls = "rounded-md px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900";
+    if (useBtn) {
+      useBtn.className = useOn ? onCls : offCls;
+      useBtn.setAttribute("aria-selected", useOn ? "true" : "false");
+    }
+    if (methodBtn) {
+      methodBtn.className = useOn ? offCls : onCls;
+      methodBtn.setAttribute("aria-selected", useOn ? "false" : "true");
+    }
+    const scroller = document.querySelector("#helpModal .relative.overflow-auto");
+    if (scroller) scroller.scrollTop = 0;
+  }
+
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove("modal-hidden");
+    document.body.style.overflow = "hidden";
+    if (id === "marketModal") renderMarketHistory();
+    if (id === "helpModal") showHelpTab("use");
+  }
+
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add("modal-hidden");
+    const open = ["helpModal", "marketModal"].some(function (mid) {
+      const modal = document.getElementById(mid);
+      return modal && !modal.classList.contains("modal-hidden");
+    });
+    if (!open) document.body.style.overflow = "";
+  }
+
+  function histMarketSeries() {
+    const years = [];
+    const eqCum = [];
+    const cashCum = [];
+    const eqAnn = [];
+    const cashAnn = [];
+    let e = 100;
+    let c = 100;
+    for (let i = 0; i < HIST_MARKET.equity.length; i++) {
+      const y = HIST_MARKET.startYear + i;
+      e *= 1 + HIST_MARKET.equity[i];
+      c *= 1 + HIST_MARKET.cash[i];
+      years.push(y);
+      eqCum.push(e);
+      cashCum.push(c);
+      eqAnn.push(HIST_MARKET.equity[i] * 100);
+      cashAnn.push(HIST_MARKET.cash[i] * 100);
+    }
+    const n = HIST_MARKET.equity.length;
+    const eqCagr = Math.pow(e / 100, 1 / n) - 1;
+    const cashCagr = Math.pow(c / 100, 1 / n) - 1;
+    let bestI = 0;
+    let worstI = 0;
+    for (let i = 1; i < n; i++) {
+      if (HIST_MARKET.equity[i] > HIST_MARKET.equity[bestI]) bestI = i;
+      if (HIST_MARKET.equity[i] < HIST_MARKET.equity[worstI]) worstI = i;
+    }
+    return {
+      years, eqCum, cashCum, eqAnn, cashAnn, eqCagr, cashCagr, endEq: e, endCash: c,
+      bestYear: HIST_MARKET.startYear + bestI,
+      bestRet: HIST_MARKET.equity[bestI],
+      worstYear: HIST_MARKET.startYear + worstI,
+      worstRet: HIST_MARKET.equity[worstI]
+    };
+  }
+
+  function renderMarketWindows(windows) {
+    const host = document.getElementById("marketWindows");
+    if (!host) return;
+    if (!windows.ok) {
+      host.innerHTML = '<p class="text-sm text-slate-700 sm:col-span-3">' + (windows.reason || "") + "</p>";
+      return;
+    }
+    const cards = [
+      { title: "Best years", start: windows.bestStartYear, tone: "border-emerald-200 bg-emerald-50", titleCls: "text-emerald-900", note: "Most pot left at the horizon" },
+      { title: "Median years", start: windows.medianStartYear, tone: "border-slate-200 bg-slate-50", titleCls: "text-slate-900", note: "Middle window at the horizon" },
+      { title: "Worst years", start: windows.worstStartYear, tone: "border-rose-200 bg-rose-50", titleCls: "text-rose-900", note: "Least pot left at the horizon" }
+    ];
+    host.innerHTML = cards.map(function (c) {
+      return '<div class="rounded-lg border px-3 py-2.5 ' + c.tone + '">'
+        + '<p class="text-xs font-semibold ' + c.titleCls + '">' + c.title + "</p>"
+        + '<p class="mt-1 text-base font-semibold text-ink-900">' + windowYears(c.start, windows.windowLen) + "</p>"
+        + '<p class="mt-1 text-xs text-slate-600">' + windows.windowLen + " consecutive years · " + c.note + "</p>"
+        + "</div>";
+    }).join("")
+      + '<p class="sm:col-span-3 text-sm text-slate-600">From your current plan (age ' + windows.currentAge + " to " + windows.horizonAge + ", "
+      + windows.nWin.toLocaleString("en-GB") + " overlapping starts, returns "
+      + (windows.sampleStart || HIST_MARKET.startYear) + "–" + (windows.sampleEnd || HIST_MARKET.endYear)
+      + "). Ranked by pot left at the horizon after withdrawals and tax.</p>";
+  }
+
+  function marketLegendLabels(chart) {
+    const items = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+    items.forEach(function (item) {
+      const ds = chart.data.datasets[item.datasetIndex];
+      if (!ds) return;
+      if (marketView === "cum") {
+        item.pointStyle = "line";
+        item.lineWidth = ds.borderWidth || 2;
+        item.lineDash = ds.borderDash || [];
+      } else {
+        item.pointStyle = "rect";
+        item.lineDash = [];
+      }
+    });
+    return items;
+  }
+
+  function renderMarketSampleNote(windows) {
+    const el = document.getElementById("marketSampleNote");
+    if (!el) return;
+    const a = assumptions();
+    if (a.histFromYear <= HIST_MARKET.startYear) {
+      el.classList.add("hidden");
+      el.innerHTML = "";
+      return;
+    }
+    el.classList.remove("hidden");
+    if (windows.ok) {
+      el.innerHTML = '<p class="text-sm leading-relaxed text-ink-900"><span class="font-semibold">Replay uses '
+        + windows.sampleStart + "–" + windows.sampleEnd + " ("
+        + windows.nWin.toLocaleString("en-GB") + " windows).</span> The graph below is still the full "
+        + HIST_MARKET.startYear + "–" + HIST_MARKET.endYear + " series.</p>";
+      return;
+    }
+    el.innerHTML = '<p class="text-sm leading-relaxed text-ink-900"><span class="font-semibold">Replay is set to start in '
+      + a.histFromYear + ".</span> " + (windows.reason || "The graph below is still the full "
+      + HIST_MARKET.startYear + "–" + HIST_MARKET.endYear + " series.") + "</p>";
+  }
+
+  function renderMarketHistory() {
+    const s = histMarketSeries();
+    const windows = computePlanHistWindows();
+    renderMarketSampleNote(windows);
+    renderMarketWindows(windows);
+    const stats = document.getElementById("marketStats");
+    if (stats) {
+      stats.innerHTML = [
+        ["Equity CAGR", (s.eqCagr * 100).toFixed(1) + "% real"],
+        ["Cash proxy CAGR", (s.cashCagr * 100).toFixed(1) + "% real"],
+        ["100 in 1900 → equity", Math.round(s.endEq).toLocaleString("en-GB")],
+        ["Best / worst equity year", s.bestYear + " " + (s.bestRet * 100).toFixed(0) + "% · " + s.worstYear + " " + (s.worstRet * 100).toFixed(0) + "%"]
+      ].map(function (row) {
+        return '<div class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2"><p class="uppercase tracking-wide text-slate-400">' + row[0] + '</p><p class="mt-0.5 font-medium text-slate-800">' + row[1] + "</p></div>";
+      }).join("");
+    }
+    const cumBtn = document.getElementById("marketViewCum");
+    const annBtn = document.getElementById("marketViewAnn");
+    if (cumBtn && annBtn) {
+      const on = "rounded-md bg-ink-900 px-2.5 py-1 text-xs font-medium text-white";
+      const off = "rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50";
+      cumBtn.className = marketView === "cum" ? on : off;
+      annBtn.className = marketView === "ann" ? on : off;
+    }
+    const ctx = document.getElementById("marketHistChart");
+    if (!ctx || typeof Chart === "undefined") return;
+    const datasets = marketView === "cum"
+      ? [
+        { label: "US large-cap (real, dividends reinvested)", data: s.eqCum, borderColor: "#0f172a", backgroundColor: "rgba(15,23,42,0.06)", fill: true, borderWidth: 2, pointRadius: 0, pointStyle: "line", tension: 0.15 },
+        { label: "Cash proxy (real)", data: s.cashCum, borderColor: "#64748b", borderDash: [5, 4], backgroundColor: "transparent", fill: false, borderWidth: 2, pointRadius: 0, pointStyle: "line", tension: 0.15 }
+      ]
+      : [
+        { label: "Equity annual real %", data: s.eqAnn, borderColor: "#0f172a", backgroundColor: "rgba(15,23,42,0.55)", type: "bar", borderWidth: 0, pointStyle: "rect" },
+        { label: "Cash proxy annual real %", data: s.cashAnn, borderColor: "#94a3b8", backgroundColor: "rgba(148,163,184,0.55)", type: "bar", borderWidth: 0, pointStyle: "rect" }
+      ];
+    const yTitle = marketView === "cum" ? "Real value of 100 invested in 1900" : "Annual real return (%)";
+    const yTick = marketView === "cum"
+      ? function (v) { return v >= 1000 ? (v / 1000).toFixed(0) + "k" : v; }
+      : function (v) { return v + "%"; };
+    const config = {
+      type: marketView === "cum" ? "line" : "bar",
+      data: { labels: s.years, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              usePointStyle: true,
+              pointStyleWidth: 28,
+              padding: 16,
+              generateLabels: marketLegendLabels
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function (c) {
+                if (c.parsed.y == null) return null;
+                if (marketView === "cum") return " " + c.dataset.label + ": " + Math.round(c.parsed.y).toLocaleString("en-GB");
+                return " " + c.dataset.label + ": " + (c.parsed.y >= 0 ? "+" : "") + c.parsed.y.toFixed(1) + "%";
+              }
+            }
+          }
+        },
+        scales: {
+          x: { title: { display: true, text: "Year" }, ticks: { maxTicksLimit: 16 }, grid: { color: "rgba(15,23,42,0.04)" } },
+          y: {
+            title: { display: true, text: yTitle },
+            ticks: { callback: yTick },
+            grid: { color: "rgba(15,23,42,0.06)" },
+            type: marketView === "cum" ? "logarithmic" : "linear"
+          }
+        }
+      }
+    };
+    if (marketHistChart) {
+      marketHistChart.destroy();
+      marketHistChart = null;
+    }
+    marketHistChart = new Chart(ctx, config);
+  }
+
+  let currentPage = "start";
+  const PAGE_IDS = { start: "pageStart", inputs: "pageInputs", results: "pageResults" };
+
+  function renderStartMeta() {
+    const el = document.getElementById("startPlanMeta");
+    if (!el) return;
+    try {
+      if (!localStorage.getItem(STORAGE_KEY)) {
+        el.textContent = "No saved plan in this browser yet. Start on Inputs.";
+        return;
+      }
+      const a = assumptions();
+      el.textContent = "A plan is saved in this browser: age " + a.currentAge +
+        " · net withdrawal " + gbp(a.spend) +
+        " · pots " + gbp(todayPotGbp()) + ".";
+    } catch (err) {
+      el.textContent = "This browser is not storing a plan (storage blocked).";
+    }
+  }
+
+  function renderResultsSummary() {
+    const el = document.getElementById("resultsPlanSummary");
+    if (!el) return;
+    const a = assumptions();
+    const line =
+      "Age " + a.currentAge +
+      " · retire " + a.retireAge +
+      " · horizon " + a.horizonAge +
+      " · net withdrawal " + gbp(a.spend) +
+      " · success target " + successLabel(a.targetSuccess) +
+      (a.histFromYear > HIST_MARKET.startYear ? " · hist from " + a.histFromYear : "") +
+      " · pots " + gbp(todayPotGbp());
+    el.textContent = line;
+    const printMeta = document.getElementById("printMeta");
+    if (printMeta) {
+      printMeta.textContent = line + " · " + new Date().toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+    }
+  }
+
+  function resizeResultCharts() {
+    requestAnimationFrame(function () {
+      if (percentileChart) percentileChart.resize();
+      if (incomeChart) incomeChart.resize();
+    });
+  }
+
+  function updatePageNav() {
+    const on = "rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-ink-950";
+    const off = "rounded-md px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white";
+    ["start", "inputs", "results"].forEach(function (name) {
+      const btn = document.getElementById("nav" + name.charAt(0).toUpperCase() + name.slice(1));
+      if (btn) btn.className = currentPage === name ? on : off;
+    });
+  }
+
+  function showPage(name) {
+    currentPage = PAGE_IDS[name] ? name : "start";
+    Object.keys(PAGE_IDS).forEach(function (key) {
+      const el = document.getElementById(PAGE_IDS[key]);
+      if (!el) return;
+      const hide = currentPage !== key;
+      el.classList.toggle("page-hidden", hide);
+      el.toggleAttribute("hidden", hide);
+      el.toggleAttribute("inert", hide);
+      el.setAttribute("aria-hidden", hide ? "true" : "false");
+    });
+    updatePageNav();
+    const hash = "#" + currentPage;
+    if (location.hash !== hash) history.replaceState(null, "", hash);
+    if (currentPage === "start") renderStartMeta();
+    if (currentPage === "results") {
+      renderResultsSummary();
+      resizeResultCharts();
+    }
+    updateSimChrome();
+    closeFieldHelp();
+    window.scrollTo(0, 0);
+  }
+
+  function pageFromHash() {
+    const h = (location.hash || "").replace(/^#/, "");
+    return PAGE_IDS[h] ? h : "start";
+  }
+
+  let fieldHelpBtn = null;
+  let fieldHelpPop = null;
+
+  function closeFieldHelp() {
+    if (fieldHelpPop) {
+      fieldHelpPop.hidden = true;
+      fieldHelpPop.textContent = "";
+    }
+    if (fieldHelpBtn) fieldHelpBtn.setAttribute("aria-expanded", "false");
+    fieldHelpBtn = null;
+  }
+
+  function openFieldHelp(btn) {
+    if (fieldHelpBtn === btn) {
+      closeFieldHelp();
+      return;
+    }
+    closeFieldHelp();
+    const text = btn.getAttribute("data-help");
+    if (!text || !fieldHelpPop) return;
+    fieldHelpPop.textContent = text;
+    fieldHelpPop.hidden = false;
+    btn.setAttribute("aria-expanded", "true");
+    fieldHelpBtn = btn;
+    const r = btn.getBoundingClientRect();
+    requestAnimationFrame(function () {
+      if (!fieldHelpPop || fieldHelpPop.hidden) return;
+      const pad = 8;
+      const w = fieldHelpPop.offsetWidth;
+      const h = fieldHelpPop.offsetHeight;
+      let left = r.left + window.scrollX;
+      let top = r.bottom + window.scrollY + 6;
+      if (left + w > window.scrollX + window.innerWidth - pad) {
+        left = window.scrollX + window.innerWidth - w - pad;
+      }
+      if (left < window.scrollX + pad) left = window.scrollX + pad;
+      if (r.bottom + 6 + h > window.innerHeight - pad && r.top > h + 8) {
+        top = r.top + window.scrollY - h - 6;
+      }
+      fieldHelpPop.style.left = left + "px";
+      fieldHelpPop.style.top = top + "px";
+    });
+  }
+
+  function bindFieldHelp() {
+    fieldHelpPop = document.createElement("div");
+    fieldHelpPop.id = "fieldHelpPop";
+    fieldHelpPop.className = "field-help-pop";
+    fieldHelpPop.hidden = true;
+    fieldHelpPop.setAttribute("role", "tooltip");
+    document.body.appendChild(fieldHelpPop);
+    document.addEventListener("click", function (e) {
+      const btn = e.target.closest && e.target.closest(".help-tip");
+      if (btn) {
+        e.preventDefault();
+        openFieldHelp(btn);
+        return;
+      }
+      if (fieldHelpPop && !fieldHelpPop.contains(e.target)) closeFieldHelp();
+    });
+    window.addEventListener("scroll", closeFieldHelp, true);
+    window.addEventListener("resize", closeFieldHelp);
+  }
+
+  function bindModals() {
+    document.getElementById("helpBtn").addEventListener("click", function () { openModal("helpModal"); });
+    document.getElementById("helpTabUse").addEventListener("click", function () { showHelpTab("use"); });
+    document.getElementById("helpTabMethod").addEventListener("click", function () { showHelpTab("method"); });
+    document.getElementById("marketHistBtn").addEventListener("click", function () { openModal("marketModal"); });
+    document.getElementById("marketViewCum").addEventListener("click", function () { marketView = "cum"; renderMarketHistory(); });
+    document.getElementById("marketViewAnn").addEventListener("click", function () { marketView = "ann"; renderMarketHistory(); });
+    document.addEventListener("click", function (e) {
+      const id = e.target.getAttribute && e.target.getAttribute("data-close-modal");
+      if (id) closeModal(id);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        closeFieldHelp();
+        closeModal("helpModal");
+        closeModal("marketModal");
+      }
+    });
+  }
+
+  function init() {
+    chartDefaults();
+    loadPersisted();
+    renderAssets();
+    renderIncomes();
+    renderOrder();
+    bindList("assetList", "asset");
+    bindList("incomeList", "income");
+
+    document.getElementById("resetDemoBtn").addEventListener("click", () => {
+      if (!confirm("Replace your current plan with the demo defaults? The numbers saved in this browser will be overwritten.")) return;
+      resetDemo();
+    });
+
+    document.getElementById("orderList").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-order-move]");
+      if (!btn || btn.disabled) return;
+      moveOrder(num(btn.getAttribute("data-order-idx")), num(btn.getAttribute("data-order-move")));
+    });
+    document.getElementById("presetPreserveIsa").addEventListener("click", () => applyOrderPreset("preserveIsa"));
+    document.getElementById("presetTaxEfficient").addEventListener("click", () => applyOrderPreset("taxEfficient"));
+
+    document.getElementById("addAssetBtn").addEventListener("click", () => {
+      const type = document.getElementById("addAssetType").value;
+      AppState.assets.push(defaultAsset(type));
+      renderAssets();
+      scheduleDeterministic();
+    });
+    document.getElementById("addIncomeBtn").addEventListener("click", () => {
+      const type = document.getElementById("addIncomeType").value;
+      AppState.incomes.push(defaultIncome(type));
+      renderIncomes();
+      scheduleDeterministic();
+    });
+    ["currentAge", "retireAge", "horizonAge", "spend", "inflation", "expReturn", "volatility", "targetSuccess", "histFromYear"].forEach((id) => {
+      document.getElementById(id).addEventListener("input", scheduleDeterministic);
+    });
+    document.querySelectorAll("[data-hist-from]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.getElementById("histFromYear").value = btn.getAttribute("data-hist-from");
+        scheduleDeterministic();
+      });
+    });
+    document.querySelectorAll("[data-run-hist]").forEach((btn) => {
+      btn.addEventListener("click", () => startSim("hist"));
+    });
+    document.querySelectorAll("[data-run-gbm]").forEach((btn) => {
+      btn.addEventListener("click", () => startSim("gbm"));
+    });
+    document.getElementById("navTitle").addEventListener("click", () => showPage("start"));
+    document.getElementById("navStart").addEventListener("click", () => showPage("start"));
+    document.getElementById("navInputs").addEventListener("click", () => showPage("inputs"));
+    document.getElementById("navResults").addEventListener("click", () => showPage("results"));
+    document.getElementById("stickyGotoResults").addEventListener("click", () => showPage("results"));
+    document.getElementById("stickyGotoInputs").addEventListener("click", () => showPage("inputs"));
+    document.getElementById("gotoInputsBtn").addEventListener("click", () => showPage("inputs"));
+    document.getElementById("startToInputs").addEventListener("click", (e) => { e.preventDefault(); showPage("inputs"); });
+    window.addEventListener("hashchange", () => showPage(pageFromHash()));
+    document.getElementById("printResultsBtn").addEventListener("click", printResults);
+    window.addEventListener("afterprint", function () {
+      setPrintChartInk(false);
+      resizeResultCharts();
+    });
+    bindPlanFiles();
+    bindFieldHelp();
+    bindModals();
+
+    showPage("start");
+    runDeterministic();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+  </script>
+</body>
+</html>
