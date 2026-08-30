@@ -349,17 +349,18 @@
         <div class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div class="block">
             <div class="lbl"><label for="inflation">Inflation %</label> <button type="button" class="help-tip" data-help="Assumed price inflation. Used to convert your nominal expected return into a real (today’s £) return. Incomes entered in today’s money stay flat in real terms unless their indexation differs." aria-label="About inflation">?</button></div>
-            <input id="inflation" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="2.5" />
+            <input id="inflation" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="3" />
           </div>
           <div class="block">
             <div class="lbl"><label for="expReturn">Expected return %</label> <button type="button" class="help-tip" data-help="Nominal annual growth used for the single deterministic line and for GBM Monte Carlo. Leave a pot’s own return blank to use this rate. Historical replay ignores this and uses actual market years instead." aria-label="About expected return">?</button></div>
-            <input id="expReturn" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="6" />
+            <input id="expReturn" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="8" />
           </div>
           <div class="block col-span-2 sm:col-span-1">
             <div class="lbl"><label for="volatility">Volatility %</label> <button type="button" class="help-tip" data-help="How much annual returns bounce around in GBM Monte Carlo only. Historical replay uses real market sequences instead. Cash volatility is capped at 2%." aria-label="About volatility">?</button></div>
-            <input id="volatility" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="12" />
+            <input id="volatility" class="field font-mono" type="text" inputmode="decimal" data-numeric autocomplete="off" spellcheck="false" dir="ltr" value="16" />
           </div>
         </div>
+        <p id="realReturnHint" class="mt-2 text-xs text-slate-600"></p>
         <div class="mt-3">
           <div class="lbl"><label for="histFromYear">Earliest historical year</label> <button type="button" class="help-tip" data-help="First calendar year allowed in Replay historical markets. Windows that would start earlier are dropped, so min / max / median and the success rate use only sequences from this year through 2022. 1900 is the full sample. 1950 skips the world wars and the Depression. GBM ignores this." aria-label="About earliest historical year">?</button></div>
           <div class="mt-1 flex flex-wrap items-center gap-2">
@@ -420,6 +421,18 @@
           </div>
         </div>
         <div id="incomeList" class="mt-4 space-y-3"></div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">Planned extras <button type="button" class="help-tip" data-help="Optional one-off or few-year costs in today’s pounds — a car, kitchen, wedding or similar. Added to that year’s net withdrawal. Choose which pot pays for it, or use your withdrawal order. If the chosen pot runs short, the rest follows the order. Leave End age blank for a single year." aria-label="About planned extras">?</button></h2>
+            <p class="mt-1 text-sm text-slate-600">On top of the yearly net withdrawal, from retirement age. Today’s £. Pick the pot, or use the withdrawal order. Blank end age = one year.</p>
+          </div>
+          <button id="addExtraBtn" type="button" class="rounded-md bg-ink-900 px-3 py-2 text-sm font-medium text-white hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-40">Add extra</button>
+        </div>
+        <div id="extraList" class="mt-4 space-y-3"></div>
+        <p id="extraListHint" class="mt-2 hidden text-xs text-slate-500"></p>
       </div>
 
       <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
@@ -487,6 +500,19 @@
         </article>
       </div>
 
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Pension coverage <button type="button" class="help-tip" data-help="How much of your yearly net withdrawal is already covered by guaranteed income once each pension starts. The rest still has to come from pots. Planned extras sit on top of this." aria-label="About pension coverage">?</button></p>
+          <p id="kpiCoverage" class="mt-2 text-sm leading-relaxed text-slate-800">—</p>
+          <p id="kpiCoverageNote" class="mt-1 text-[11px] text-slate-500">Share of the net withdrawal covered by guaranteed income</p>
+        </article>
+        <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Lifetime tax &amp; extras <button type="button" class="help-tip" data-help="UK income tax summed on the single expected-return path, plus any planned extras in today’s pounds. Changing pot order changes lifetime tax; extras are extra net spend in the years you set." aria-label="About lifetime tax and extras">?</button></p>
+          <p id="kpiLifetimeTax" class="kpi-value mt-2 text-3xl font-semibold text-slate-400">—</p>
+          <p id="kpiLifetimeTaxNote" class="mt-1 text-[11px] text-slate-500">UK income tax on the expected-return path</p>
+        </article>
+      </div>
+
       <div>
         <div class="mb-2 flex items-baseline justify-between gap-3">
           <h3 class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Pot at selected ages (real £)</h3>
@@ -508,8 +534,9 @@
       <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div class="flex items-baseline justify-between gap-3">
           <h2 class="text-sm font-semibold">Income source allocation (deterministic)</h2>
-          <p class="text-[11px] text-slate-500">Bars = gross drawn · dashed line = net withdrawal</p>
+          <p class="text-[11px] text-slate-500">Bars = gross from each pot · black line = kept after tax · amber dashed = target net · rose dashed = income tax</p>
         </div>
+        <p id="incomeAllocNote" class="mt-2 text-xs leading-relaxed text-slate-600"></p>
         <div class="chart-frame mt-3 h-[320px]">
           <canvas id="incomeChart"></canvas>
         </div>
@@ -518,7 +545,7 @@
       <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div class="flex items-baseline justify-between gap-3">
           <h2 class="text-sm font-semibold">Year-by-year tax &amp; cash-flow</h2>
-          <p class="text-[11px] text-slate-500">Deterministic path · real £ · drawdown years</p>
+          <p class="text-[11px] text-slate-500">Deterministic path · today’s £ · Extra is planned extra spend · net stays at your target plus extras; tax is the gap between gross and net</p>
         </div>
         <div id="cashflowTableWrap" class="cashflow-scroll mt-3 max-h-[420px] overflow-auto rounded-lg border border-slate-200"></div>
       </div>
@@ -586,9 +613,11 @@
         <ul>
           <li><strong>Ages</strong> — current age, when withdrawals start, and the last age modelled (the horizon).</li>
           <li><strong>Net withdrawal</strong> — what you want left after UK income tax each year, in today’s pounds. The model may withdraw more from taxable pots so you still receive this net amount.</li>
+          <li><strong>Inflation %</strong> — used in the overall calculation. It does not raise the net withdrawal in the year-by-year table (that figure is already in today’s pounds). It converts your nominal expected return into a real return, so pots grow more slowly in today’s £ if inflation is higher.</li>
           <li><strong>Success target %</strong> — used only when the planner searches for the companion “success-target withdrawal”. It does not change the success rate shown for the amount you typed.</li>
           <li><strong>Pots</strong> — add ISA, SIPP, GIA, cash or a US 401(k). On a SIPP, enter how much is still tax-free versus already taxable if you have already taken PCLS. Foreign pots and foreign pensions take any currency plus an FX rate (GBP per 1 unit). Leave a pot’s return blank to use the global expected return.</li>
           <li><strong>Income &amp; pensions</strong> — State Pension and other guaranteed income, with a start age.</li>
+          <li><strong>Planned extras</strong> — optional one-off or few-year costs in today’s pounds (a car, kitchen, wedding). Added to that year’s net withdrawal. Choose which pot pays, or use the withdrawal order. Leave End age blank for a single year.</li>
           <li><strong>Withdrawal order</strong> — which pot is drawn first after guaranteed income. Use the up / down buttons or a preset.</li>
           <li><strong>Earliest historical year</strong> — 1900 is the full market sample. 1950 skips the world wars and the Depression. This only affects Replay historical markets.</li>
         </ul>
@@ -609,8 +638,12 @@
           <li><strong>Portfolio depletes</strong> — first age the weaker (10th-percentile) path is empty. <strong>Worst case</strong> is the earliest age any path runs out.</li>
           <li><strong>Success-target withdrawal</strong> — the highest constant net withdrawal at which at least your chosen share of paths still succeed. It can be above or below the amount you entered.</li>
           <li><strong>Age cards</strong> — after a run, each age shows median, min and max pot at that age. The richest year at 70 need not be the same path as at 90.</li>
-          <li><strong>Charts and table</strong> — portfolio over age, where income is drawn from, and a year-by-year tax and cash-flow table.</li>
+          <li><strong>Charts and table</strong> — portfolio over age, where income is drawn from, and a year-by-year tax and cash-flow table. The Net column stays at your typed withdrawal because the table is in today’s pounds — inflation is still applied (see Method).</li>
         </ul>
+        <h3>Why the withdrawal table stays flat</h3>
+        <p>Inflation <strong>is</strong> used. The table does not lift the net withdrawal each year because every figure is already in today’s purchasing power. £47,000 at age 80 means the same spending power as £47,000 today, not a future bank statement. Planned extras stay at the amount you typed. Tax bands are held at 2026/27 levels in real terms, so the Tax column does not creep up with inflation either.</p>
+        <p>What inflation changes is how fast pots grow in that same today’s-£ frame: (1 + expected return) / (1 + inflation) − 1. Inputs shows that real rate under Inflation. Look at the <strong>portfolio chart</strong> and <strong>age cards</strong> to see the effect, not the Net column.</p>
+        <p><strong>Replay historical markets</strong> ignores the inflation and return you type — those market years are already real (inflation-adjusted). A DB pension only changes in the table if its indexation differs from inflation.</p>
         <p>Use <strong>Print / Save as PDF</strong> on Results for a readable copy. Switch to the <strong>Method</strong> tab for tax treatment, data sources and what is not modelled.</p>
       </div>
 
@@ -618,9 +651,11 @@
         <h3>Today’s money (real £)</h3>
         <p>Everything on the charts and in the table is in <strong>today’s purchasing power</strong>. Your <strong>net withdrawal</strong> is the amount you want left after income tax each year, held constant in real terms.</p>
         <p>Expected return is entered as <strong>nominal</strong>. The engine converts it to a real return using your inflation rate: (1 + return) / (1 + inflation) − 1. State Pension is entered in today’s £ and treated as inflation-linked. Foreign pensions can be in any currency with an FX rate (GBP per 1 unit) and are also treated as inflation-linked. A DB pension only changes in real terms if its indexation differs from inflation.</p>
+        <p>Raising inflation does <strong>not</strong> lift the net withdrawal line, the year-by-year Net column, or the tax bars in early years. That withdrawal is already in today’s pounds, and tax bands are held constant in real terms. Inflation only cuts the real growth rate of pots: (1 + expected return) / (1 + inflation) − 1. Inputs shows that real rate. The effect appears on the portfolio path and later age cards, and in how long pots last — not as a rising withdrawal in the table.</p>
+        <p><strong>Replay historical markets</strong> ignores the inflation and return you type. The embedded 1900–2022 series is already real. <strong>GBM</strong> does use the rate you typed. State Pension and inflation-linked foreign pensions stay flat in today’s £. A DB pension only changes in real terms if its indexation differs from inflation. Planned extras stay at the amount you entered.</p>
 
         <h3>How a year is calculated</h3>
-        <p>In each retirement year the model takes guaranteed income first, then draws from invested pots in your chosen order until net of UK income tax covers the net withdrawal (or the pots run out). Growth is applied <strong>after</strong> that year’s withdrawals. Tax uses simplified England / Wales / NI 2026/27 bands (20% / 40% / 45%), Personal Allowance £12,570 with the £100,000 taper, and frozen thresholds in real terms.</p>
+        <p>In each retirement year the model takes guaranteed income first, then draws any <strong>planned extras</strong> from the pot you chose for each extra (or from the withdrawal order if you left that on “Withdrawal order”). If that pot cannot cover the extra, the remainder follows your withdrawal order. Remaining net withdrawal is then taken in your chosen order until net of UK income tax covers the target (or the pots run out). Growth is applied <strong>after</strong> that year’s withdrawals. Tax uses simplified England / Wales / NI 2026/27 bands (20% / 40% / 45%), Personal Allowance £12,570 with the £100,000 taper, and frozen thresholds in real terms. Extras are entered in today’s pounds and do not rise with inflation.</p>
         <ul>
           <li><strong>ISA</strong> — withdrawals are tax-free.</li>
           <li><strong>GIA / cash</strong> — withdrawals are treated as taxable income. Optional taxable yield is extra deemed income (the pot is not reduced by that yield alone).</li>
@@ -639,7 +674,9 @@
           <li><strong>Success rate</strong> — share of paths with a portfolio above £0 at the horizon age.</li>
           <li><strong>Median capital</strong> — 50th percentile pot at the horizon, real £.</li>
           <li><strong>Portfolio depletes (p10)</strong> — first age at which the 10th-percentile path is empty. <strong>Worst case</strong> is the first age any path in that run is empty (the earliest ruin).</li>
-          <li><strong>Success-target withdrawal</strong> — highest constant real net withdrawal at which at least your chosen share of the same paths still have money at the horizon (default 90%). It can be above or below the amount you entered.</li>
+          <li><strong>Success-target withdrawal</strong> — highest constant real net withdrawal at which at least your chosen share of the same paths still have money at the horizon (default 90%). It can be above or below the amount you entered. Planned extras stay fixed while this search runs.</li>
+          <li><strong>Pension coverage</strong> — how much of the yearly net withdrawal is already paid by guaranteed income once each pension starts.</li>
+          <li><strong>Lifetime tax</strong> — UK income tax summed on the single expected-return path. Planned extras are extra net spend in the years you set.</li>
           <li><strong>Min / max on age cards</strong> — lowest and highest pot among those paths <em>at that age</em>. Max is not one continuous “best career”: the richest window at 70 may differ from the richest at 90. The hint’s <strong>best start</strong> / <strong>worst start</strong> year is the single historical window with the most / least money at the horizon.</li>
           <li><strong>p10 / p50 / p90</strong> — after a historical run, these are percentiles of those consecutive windows. After GBM, they are percentiles of the random paths.</li>
         </ul>
@@ -778,6 +815,16 @@
     taxEfficient: ["isa", "gia", "sipp", "us401k"]
   };
 
+  const MAX_EXTRAS = 8;
+
+  const EXTRA_SOURCES = {
+    order: "Withdrawal order",
+    isa: "Stocks & Shares ISA",
+    gia: "GIA / cash",
+    sipp: "UK SIPP",
+    us401k: "US 401(k) / IRA"
+  };
+
   const RMD_FACTORS = {
     72: 27.4, 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9, 78: 22.0, 79: 21.1,
     80: 20.2, 81: 19.4, 82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4,
@@ -834,6 +881,65 @@
     return (AppState.withdrawalOrder && AppState.withdrawalOrder.length)
       ? AppState.withdrawalOrder
       : ORDER_PRESETS.taxEfficient;
+  }
+
+  function currentExtras() {
+    return Array.isArray(AppState.extras) ? AppState.extras : [];
+  }
+
+  function extraSpan(extra) {
+    const start = Math.round(num(extra && extra.startAge));
+    if (!Number.isFinite(start)) return null;
+    const rawEnd = extra.endAge === "" || extra.endAge == null
+      ? start
+      : Math.round(num(extra.endAge));
+    const end = Number.isFinite(rawEnd) && rawEnd >= start ? rawEnd : start;
+    return { start, end };
+  }
+
+  function extraSource(extra) {
+    const s = extra && extra.source;
+    return EXTRA_SOURCES[s] ? s : "order";
+  }
+
+  function normalizeExtra(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const span = extraSpan(raw);
+    return {
+      id: raw.id != null ? raw.id : uid(),
+      name: String(raw.name || "Planned extra"),
+      amount: Math.max(0, num(raw.amount)),
+      startAge: span ? span.start : "",
+      endAge: raw.endAge === "" || raw.endAge == null ? "" : (span ? span.end : ""),
+      source: extraSource(raw)
+    };
+  }
+
+  function extrasDueAtAge(extras, age) {
+    const due = [];
+    for (const extra of extras || []) {
+      const amt = Math.max(0, num(extra.amount));
+      if (amt <= 0) continue;
+      const span = extraSpan(extra);
+      if (!span || age < span.start || age > span.end) continue;
+      due.push({ amount: amt, source: extraSource(extra), name: extra.name });
+    }
+    return due;
+  }
+
+  function extraNeedAtAge(extras, age) {
+    return extrasDueAtAge(extras, age).reduce(function (s, extra) { return s + extra.amount; }, 0);
+  }
+
+  function extrasTotalBetween(extras, fromAge, toAge) {
+    let total = 0;
+    for (let age = fromAge; age <= toAge; age++) total += extraNeedAtAge(extras, age);
+    return total;
+  }
+
+  function targetNeedAtAge(spend, extras, age, retireAge) {
+    if (age < retireAge) return 0;
+    return Math.max(0, spend) + extraNeedAtAge(extras, age);
   }
 
   function ordinal(n) {
@@ -1001,12 +1107,13 @@
     incomes: [
       { id: uid(), type: "ukState", name: "UK State Pension", amount: 11973, currency: "GBP", fx: 1, startAge: 67, indexationPct: 2.5, taxStatus: "taxable" }
     ],
-    withdrawalOrder: ORDER_PRESETS.preserveIsa.slice()
+    withdrawalOrder: ORDER_PRESETS.preserveIsa.slice(),
+    extras: []
   };
 
   const STORAGE_KEY = "uk-retire-planner-v1";
   const ASSUMPTION_IDS = ["currentAge", "retireAge", "horizonAge", "spend", "inflation", "expReturn", "volatility", "targetSuccess", "histFromYear"];
-  const DEMO_ASSUMPTIONS = { currentAge: "55", retireAge: "67", horizonAge: "100", spend: "40000", inflation: "2.5", expReturn: "6", volatility: "12", targetSuccess: "90", histFromYear: "1900" };
+  const DEMO_ASSUMPTIONS = { currentAge: "55", retireAge: "67", horizonAge: "100", spend: "40000", inflation: "3", expReturn: "8", volatility: "16", targetSuccess: "90", histFromYear: "1900" };
 
   function demoState() {
     return {
@@ -1019,7 +1126,10 @@
       incomes: [
         { id: uid(), type: "ukState", name: "UK State Pension", amount: 11973, currency: "GBP", fx: 1, startAge: 67, indexationPct: 2.5, taxStatus: "taxable" }
       ],
-      withdrawalOrder: ORDER_PRESETS.preserveIsa.slice()
+      withdrawalOrder: ORDER_PRESETS.preserveIsa.slice(),
+      extras: [
+        { id: uid(), name: "New car", amount: 25000, startAge: 70, endAge: "", source: "gia" }
+      ]
     };
   }
 
@@ -1053,6 +1163,7 @@
       assumptions: currentAssumptionsFromForm(),
       assets: AppState.assets,
       incomes: AppState.incomes,
+      extras: AppState.extras,
       withdrawalOrder: AppState.withdrawalOrder
     };
   }
@@ -1069,6 +1180,12 @@
     if (Array.isArray(data.incomes)) {
       AppState.incomes = data.incomes;
       bumpNextId(data.incomes);
+    }
+    if (Array.isArray(data.extras)) {
+      AppState.extras = data.extras.map(normalizeExtra).filter(Boolean);
+      bumpNextId(AppState.extras);
+    } else {
+      AppState.extras = [];
     }
     if (Array.isArray(data.withdrawalOrder) && data.withdrawalOrder.length) {
       const allowed = new Set(Object.keys(ORDER_META));
@@ -1095,6 +1212,7 @@
         assumptions: snap.assumptions,
         assets: snap.assets,
         incomes: snap.incomes,
+        extras: snap.extras,
         withdrawalOrder: snap.withdrawalOrder
       }));
       const el = document.getElementById("saveStatus");
@@ -1212,11 +1330,13 @@
     const demo = demoState();
     AppState.assets = demo.assets;
     AppState.incomes = demo.incomes;
+    AppState.extras = demo.extras;
     AppState.withdrawalOrder = demo.withdrawalOrder;
     applyAssumptionsToForm(DEMO_ASSUMPTIONS);
     persist();
     renderAssets();
     renderIncomes();
+    renderExtras();
     renderOrder();
     scheduleDeterministic();
     const el = document.getElementById("saveStatus");
@@ -1229,9 +1349,9 @@
       retireAge: Math.round(num(document.getElementById("retireAge").value, 67)),
       horizonAge: Math.round(num(document.getElementById("horizonAge").value, 100)),
       spend: Math.max(0, num(document.getElementById("spend").value, 0)),
-      inflation: num(document.getElementById("inflation").value, 2.5),
-      expReturn: num(document.getElementById("expReturn").value, 6),
-      volatility: Math.max(0, num(document.getElementById("volatility").value, 12)),
+      inflation: num(document.getElementById("inflation").value, 3),
+      expReturn: num(document.getElementById("expReturn").value, 8),
+      volatility: Math.max(0, num(document.getElementById("volatility").value, 16)),
       targetSuccess: clampTargetSuccess(document.getElementById("targetSuccess").value),
       histFromYear: clampHistFromYear(document.getElementById("histFromYear").value)
     };
@@ -1460,12 +1580,16 @@
   }
 
   function emptyBreakdown() {
-    return { ukState: 0, otherIncome: 0, isa: 0, gia: 0, sipp: 0, us401k: 0, tax: 0, taxable: 0, gross: 0, net: 0, shortfall: 0, spend: 0 };
+    return { ukState: 0, otherIncome: 0, isa: 0, gia: 0, sipp: 0, us401k: 0, tax: 0, taxable: 0, gross: 0, net: 0, shortfall: 0, spend: 0, extra: 0 };
   }
 
-  function drawdownYear(pots, incomes, age, spendNeed, remainingLSA, inflationPct, currentAge) {
+  function drawdownYear(pots, incomes, age, baseSpend, remainingLSA, inflationPct, currentAge, extrasDue) {
+    const due = extrasDue || [];
+    const extraNeed = due.reduce(function (s, extra) { return s + extra.amount; }, 0);
+    const spendNeed = Math.max(0, baseSpend) + extraNeed;
     const bd = emptyBreakdown();
     bd.spend = spendNeed;
+    bd.extra = extraNeed;
     const yearsFromNow = age - currentAge;
     let guaranteed = 0;
     let taxable = 0;
@@ -1488,19 +1612,24 @@
     }
 
     let isaW = 0, giaW = 0, sippW = 0, usW = 0;
+    let currentTarget = spendNeed;
 
     const netOf = () => guaranteed + isaW + giaW + sippW + usW - TaxEngine.incomeTax(taxable);
 
-    let need = spendNeed - netOf();
+    let need = currentTarget - netOf();
     if (need < 0) {
       addToCash(pots, -need);
       need = 0;
     }
 
+    function refreshNeed() {
+      need = currentTarget - netOf();
+    }
+
     function drawIsa() {
       if (need <= 0.01) return;
       isaW += takeFromPots(pots, ["isa"], need);
-      need = spendNeed - netOf();
+      refreshNeed();
     }
 
     function drawGia() {
@@ -1511,7 +1640,7 @@
         const took = takeFromPots(pots, ["cash", "gia"], paRoom);
         giaW += took;
         taxable += took;
-        need = spendNeed - netOf();
+        refreshNeed();
       }
       if (need > 0.01) {
         const avail = sumPots(pots, ["cash", "gia"]);
@@ -1520,7 +1649,7 @@
           const took = takeFromPots(pots, ["cash", "gia"], w);
           giaW += took;
           taxable += took;
-          need = spendNeed - netOf();
+          refreshNeed();
         }
       }
     }
@@ -1537,7 +1666,7 @@
       sippW += drew.taken;
       taxable += drew.taken - tf;
       remainingLSA -= tf;
-      need = spendNeed - netOf();
+      refreshNeed();
     }
 
     function drawUs() {
@@ -1548,10 +1677,21 @@
       const took = takeFromPots(pots, ["us401k"], w);
       usW += took;
       taxable += took;
-      need = spendNeed - netOf();
+      refreshNeed();
     }
 
     const drawers = { isa: drawIsa, gia: drawGia, sipp: drawSipp, us401k: drawUs };
+    for (const extra of due) {
+      if (extra.source === "order" || !drawers[extra.source]) continue;
+      const uncovered = Math.min(extra.amount, Math.max(0, spendNeed - netOf()));
+      if (uncovered <= 0.01) continue;
+      currentTarget = netOf() + uncovered;
+      refreshNeed();
+      drawers[extra.source]();
+      currentTarget = spendNeed;
+      refreshNeed();
+    }
+
     const order = currentWithdrawalOrder();
     for (const key of order) {
       if (drawers[key]) drawers[key]();
@@ -1632,7 +1772,8 @@
           const bd = emptyBreakdown();
           breakdowns.push(bd);
         } else {
-          const result = drawdownYear(pots, incomes, age, a.spend, remainingLSA, a.inflation, a.currentAge);
+          const extrasDue = extrasDueAtAge(currentExtras(), age);
+          const result = drawdownYear(pots, incomes, age, a.spend, remainingLSA, a.inflation, a.currentAge, extrasDue);
           remainingLSA = result.remainingLSA;
           if (!result.ruined) applyReturns(pots, spec);
           const total = result.ruined ? 0 : sumPots(pots, ["cash", "gia", "isa", "sipp", "us401k"]);
@@ -1708,7 +1849,10 @@
     const incs = AppState.incomes.map(function (x) {
       return [x.type, x.amount, x.currency, x.fx, x.startAge, x.indexationPct, x.taxStatus].join(":");
     }).join(",");
-    return [a.currentAge, a.retireAge, a.horizonAge, a.spend, a.inflation, a.targetSuccess, a.histFromYear, AppState.withdrawalOrder.join(","), pots, incs].join("|");
+    const extras = currentExtras().map(function (x) {
+      return [x.name, x.amount, x.startAge, x.endAge, extraSource(x)].join(":");
+    }).join(",");
+    return [a.currentAge, a.retireAge, a.horizonAge, a.spend, a.inflation, a.targetSuccess, a.histFromYear, AppState.withdrawalOrder.join(","), pots, incs, extras].join("|");
   }
 
   function rankHistWindows(startYears, terminals) {
@@ -1908,6 +2052,7 @@
   /* ---------- charts ---------- */
   let percentileChart = null;
   let incomeChart = null;
+  let lastDetPath = null;
 
   function chartDefaults() {
     Chart.defaults.font.family = '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif';
@@ -2003,7 +2148,7 @@
     }
     datasets.push({
       label: "Net withdrawal",
-      data: ages.map(() => spend),
+      data: ages.map((age) => targetNeedAtAge(spend, currentExtras(), age, assumptions().retireAge)),
       borderColor: "#d97706",
       borderDash: [6, 4],
       borderWidth: 1.5,
@@ -2069,12 +2214,20 @@
       borderWidth: 0,
       borderRadius: 2,
       stack: "inc",
-      order: 2
+      yAxisID: "y",
+      order: 3
     });
-    const netReceived = breakdowns.map((b) => {
-      const gross = (b.ukState || 0) + (b.otherIncome || 0) + (b.isa || 0) + (b.gia || 0) + (b.sipp || 0) + (b.us401k || 0);
-      return Math.max(0, gross - (b.tax || 0));
+    const grossOf = (b) => (b.ukState || 0) + (b.otherIncome || 0) + (b.isa || 0) + (b.gia || 0) + (b.sipp || 0) + (b.us401k || 0);
+    const netReceived = breakdowns.map((b) => Math.max(0, grossOf(b) - (b.tax || 0)));
+    const taxTaken = breakdowns.map((b) => Math.max(0, b.tax || 0));
+    const extras = currentExtras();
+    const targetNeed = ages.map((age) => targetNeedAtAge(spend, extras, age, retireAge));
+    let yMax = Math.max(spend, 1);
+    breakdowns.forEach(function (b, i) {
+      yMax = Math.max(yMax, grossOf(b), netReceived[i] || 0, taxTaken[i] || 0, targetNeed[i] || 0);
     });
+    yMax *= 1.12;
+    const lineBase = { type: "line", yAxisID: "yNet", pointRadius: 0, fill: false, order: 0 };
     const datasets = [
       mk("State Pension", "ukState", "#1e3a5f"),
       mk("DB / foreign", "otherIncome", "#3b6d9a"),
@@ -2082,29 +2235,29 @@
       mk("GIA / cash", "gia", "#ca8a04"),
       mk("SIPP", "sipp", "#7c3aed"),
       mk("401(k) / IRA", "us401k", "#be123c"),
-      {
-        type: "line",
-        label: "Net withdrawal",
-        data: ages.map(() => spend),
+      Object.assign({}, lineBase, {
+        label: "Target net withdrawal",
+        data: targetNeed,
         borderColor: "#d97706",
         borderDash: [6, 4],
         borderWidth: 2,
-        pointRadius: 0,
-        fill: false,
-        order: 0,
-        stack: "netTarget"
-      },
-      {
-        type: "line",
-        label: "Net after tax",
+        order: 0
+      }),
+      Object.assign({}, lineBase, {
+        label: "Kept after tax",
         data: netReceived,
         borderColor: "#0f172a",
-        borderWidth: 1.75,
-        pointRadius: 0,
-        fill: false,
-        order: 1,
-        stack: "netReceived"
-      }
+        borderWidth: 2,
+        order: 1
+      }),
+      Object.assign({}, lineBase, {
+        label: "Income tax",
+        data: taxTaken,
+        borderColor: "#be123c",
+        borderDash: [2, 3],
+        borderWidth: 1.5,
+        order: 2
+      })
     ];
     const config = {
       type: "bar",
@@ -2137,21 +2290,59 @@
           },
           y: {
             stacked: true,
-            title: { display: true, text: "£ real (bars gross · lines net)" },
+            min: 0,
+            max: yMax,
+            title: { display: true, text: "£ today’s money (bars gross · lines net / tax)" },
             ticks: { callback: (v) => gbp(v) },
             grid: { color: "rgba(15,23,42,0.06)" },
             beginAtZero: true
+          },
+          yNet: {
+            stacked: false,
+            min: 0,
+            max: yMax,
+            display: false,
+            grid: { drawOnChartArea: false }
           }
         }
       }
     };
     if (incomeChart) {
-      incomeChart.data.labels = ages;
-      incomeChart.data.datasets = datasets;
-      incomeChart.update();
-    } else {
-      incomeChart = new Chart(ctx, config);
+      incomeChart.destroy();
+      incomeChart = null;
     }
+    incomeChart = new Chart(ctx, config);
+  }
+
+  function renderIncomeAllocNote(ages, breakdowns, retireAge) {
+    const el = document.getElementById("incomeAllocNote");
+    if (!el) return;
+    let i = 0;
+    while (i < ages.length && ages[i] < retireAge) i++;
+    if (i >= ages.length) {
+      el.textContent = "No drawdown years in the current age range.";
+      return;
+    }
+    const b = breakdowns[i] || emptyBreakdown();
+    const parts = [];
+    function add(label, v) {
+      if (v > 0.5) parts.push(label + " " + gbp(v));
+    }
+    add("State Pension", b.ukState);
+    add("DB / foreign", b.otherIncome);
+    add("ISA", b.isa);
+    add("GIA", b.gia);
+    add("SIPP", b.sipp);
+    add("401(k)", b.us401k);
+    const src = parts.length ? parts.join(" · ") : "no pot withdrawals yet";
+    const extraBit = (b.extra || 0) > 0.5
+      ? " · planned extra " + gbp(b.extra)
+      : "";
+    el.textContent = "First withdrawal year (age " + ages[i] + "): " + src +
+      extraBit +
+      " · income tax " + (b.tax > 0.5 ? gbp(b.tax) : "none") +
+      " · kept after tax " + gbp(b.net) +
+      ". Pot order changes these bars. Inflation does not raise the net line — it only changes how fast pots grow in today’s £.";
   }
 
   function cellGbp(v) {
@@ -2170,6 +2361,7 @@
         : `<td class="px-2 py-1.5 text-right text-slate-400">—</td>`;
       rows.push(`<tr class="border-t border-slate-100 hover:bg-slate-50">
         <td class="px-2 py-1.5 font-medium text-slate-800">${ages[i]}</td>
+        <td class="px-2 py-1.5 text-right ${b.extra > 0.5 ? "text-amber-800" : "text-slate-400"}">${cellGbp(b.extra)}</td>
         <td class="px-2 py-1.5 text-right">${cellGbp(b.ukState)}</td>
         <td class="px-2 py-1.5 text-right">${cellGbp(b.otherIncome)}</td>
         <td class="px-2 py-1.5 text-right">${cellGbp(b.isa)}</td>
@@ -2187,10 +2379,11 @@
       return;
     }
     wrap.innerHTML = `
-      <table class="cashflow-table w-full min-w-[720px] text-left text-[11px] text-slate-600">
+      <table class="cashflow-table w-full min-w-[780px] text-left text-[11px] text-slate-600">
         <thead>
           <tr>
             <th class="px-2 py-2 font-semibold text-slate-700">Age</th>
+            <th class="px-2 py-2 text-right font-semibold text-slate-700">Extra</th>
             <th class="px-2 py-2 text-right font-semibold text-slate-700">State</th>
             <th class="px-2 py-2 text-right font-semibold text-slate-700">DB / foreign</th>
             <th class="px-2 py-2 text-right font-semibold text-slate-700">ISA</th>
@@ -2497,6 +2690,57 @@
       '<p class="text-xs text-slate-500">No guaranteed income streams.</p>';
   }
 
+  function extraRowHtml(extra) {
+    return `
+      <div class="rounded-lg border border-slate-200 bg-slate-50/70 p-3" data-extra-id="${extra.id}">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold text-slate-700">Planned extra</span>
+          <button type="button" data-remove-extra="${extra.id}" class="text-xs text-slate-500 hover:text-rose-700">Remove</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <label class="col-span-2">
+            <span class="lbl">Name</span>
+            <input class="field" data-field="name" type="text" autocomplete="off" spellcheck="false" dir="ltr" aria-label="Extra name" value="${escapeAttr(extra.name)}" />
+          </label>
+          <label>
+            <span class="lbl">Amount £ ${fieldHelp("Cost in today’s pounds. Added to that year’s net withdrawal. Paid from the pot you select below, after guaranteed income.", "About extra amount")}</span>
+            <input class="field font-mono" data-field="amount" data-numeric type="text" inputmode="decimal" autocomplete="off" spellcheck="false" dir="ltr" aria-label="Amount £" value="${escapeAttr(extra.amount)}" />
+          </label>
+          <label>
+            <span class="lbl">Start age ${fieldHelp("First age this extra is spent. If End age is blank, it is a one-off in this year only.", "About extra start age")}</span>
+            <input class="field font-mono" data-field="startAge" data-numeric type="text" autocomplete="off" spellcheck="false" dir="ltr" aria-label="Start age" value="${escapeAttr(extra.startAge)}" />
+          </label>
+          <label>
+            <span class="lbl">End age ${fieldHelp("Last age this extra is spent, inclusive. Leave blank for a single year. Use a later age for a few years of higher spending.", "About extra end age")}</span>
+            <input class="field font-mono" data-field="endAge" data-numeric type="text" autocomplete="off" spellcheck="false" dir="ltr" placeholder="One year" aria-label="End age" value="${escapeAttr(extra.endAge)}" />
+          </label>
+          <label class="col-span-2 sm:col-span-2">
+            <span class="lbl">From pot ${fieldHelp("Which pot pays this extra. Withdrawal order uses the same pot sequence as the yearly withdrawal. If the chosen pot cannot cover it, the rest follows that order.", "About extra pot")}</span>
+            <select class="field" data-field="source" aria-label="From pot">
+              ${Object.keys(EXTRA_SOURCES).map(function (key) {
+                return `<option value="${key}" ${extraSource(extra) === key ? "selected" : ""}>${EXTRA_SOURCES[key]}</option>`;
+              }).join("")}
+            </select>
+          </label>
+        </div>
+      </div>`;
+  }
+
+  function renderExtras() {
+    const list = document.getElementById("extraList");
+    const hint = document.getElementById("extraListHint");
+    const addBtn = document.getElementById("addExtraBtn");
+    if (!list) return;
+    const extras = currentExtras();
+    list.innerHTML = extras.map(extraRowHtml).join("") ||
+      '<p class="text-xs text-slate-500">None yet. Add a car, kitchen, wedding or similar — it only hits the years you set.</p>';
+    if (addBtn) addBtn.disabled = extras.length >= MAX_EXTRAS;
+    if (hint) {
+      hint.classList.toggle("hidden", extras.length < MAX_EXTRAS);
+      hint.textContent = extras.length >= MAX_EXTRAS ? "You can add up to " + MAX_EXTRAS + " extras." : "";
+    }
+  }
+
   function us401kOrderNote() {
     const ctx = orderContext("us401k");
     const drawAge = PathHints.us401kDrawAge;
@@ -2544,7 +2788,7 @@
     }
     update401kStartDisplay(null, null);
     renderOrder();
-    scheduleDeterministic();
+    kickDeterministic();
   }
 
   function applyOrderPreset(name) {
@@ -2555,7 +2799,7 @@
     }
     update401kStartDisplay(null, null);
     renderOrder();
-    scheduleDeterministic();
+    kickDeterministic();
   }
 
   function defaultAsset(type) {
@@ -2576,18 +2820,42 @@
     return base;
   }
 
+  function defaultExtra() {
+    const a = assumptions();
+    const start = Math.max(a.currentAge, a.retireAge);
+    return {
+      id: uid(),
+      name: currentExtras().length ? "Planned extra" : "New car",
+      amount: 25000,
+      startAge: start,
+      endAge: "",
+      source: "order"
+    };
+  }
+
   /* ---------- bind & refresh ---------- */
   let detTimer = null;
   let mcStale = true;
+
+  function markSimStale() {
+    if (!mcStale) {
+      mcStale = true;
+      document.getElementById("chartHint").textContent = "Inputs changed — re-run Monte Carlo for updated percentiles";
+    }
+  }
 
   function scheduleDeterministic() {
     persist();
     clearTimeout(detTimer);
     detTimer = setTimeout(runDeterministic, 180);
-    if (!mcStale) {
-      mcStale = true;
-      document.getElementById("chartHint").textContent = "Inputs changed — re-run Monte Carlo for updated percentiles";
-    }
+    markSimStale();
+  }
+
+  function kickDeterministic() {
+    persist();
+    clearTimeout(detTimer);
+    markSimStale();
+    runDeterministic();
   }
 
   function runDeterministic() {
@@ -2601,11 +2869,15 @@
     }
     errEl.classList.add("hidden");
     const path = projectPath(a, AppState.assets, AppState.incomes, false);
+    lastDetPath = path;
     renderPercentileChart(path.ages, MonteCarlo.last && !mcStale
       ? { p10: MonteCarlo.last.p10, p50: MonteCarlo.last.p50, p90: MonteCarlo.last.p90 }
       : { deterministic: path.totals }, a.spend);
     renderIncomeChart(path.ages, path.breakdowns, a.retireAge, a.spend);
+    renderIncomeAllocNote(path.ages, path.breakdowns, a.retireAge);
     renderCashflowTable(path.ages, path.breakdowns, a.retireAge);
+    renderPlanInsights(path);
+    renderRealReturnHint();
     renderAgeSnapshots(path.ages, path.totals, a.currentAge, MonteCarlo.last);
     update401kStartDisplay(path.ages, path.breakdowns);
     renderOrder();
@@ -2673,6 +2945,13 @@
           ? (e.target.value === "" ? "" : e.target.value)
           : e.target.value;
         syncSippSplitFields(row, field, e.target);
+      } else if (kind === "extra") {
+        const id = num(e.target.closest("[data-extra-id]")?.getAttribute("data-extra-id"));
+        const row = currentExtras().find((x) => x.id === id);
+        if (!row) return;
+        row[field] = e.target.hasAttribute("data-numeric")
+          ? (e.target.value === "" ? "" : e.target.value)
+          : e.target.value;
       } else {
         const id = num(e.target.closest("[data-income-id]")?.getAttribute("data-income-id"));
         const row = AppState.incomes.find((x) => x.id === id);
@@ -2691,6 +2970,10 @@
         const id = num(e.target.closest("[data-asset-id]")?.getAttribute("data-asset-id"));
         const row = AppState.assets.find((x) => x.id === id);
         if (row) row[field] = e.target.value;
+      } else if (kind === "extra") {
+        const id = num(e.target.closest("[data-extra-id]")?.getAttribute("data-extra-id"));
+        const row = currentExtras().find((x) => x.id === id);
+        if (row) row[field] = e.target.value;
       } else {
         const id = num(e.target.closest("[data-income-id]")?.getAttribute("data-income-id"));
         const row = AppState.incomes.find((x) => x.id === id);
@@ -2701,6 +2984,7 @@
     el.addEventListener("click", (e) => {
       const ra = e.target.getAttribute("data-remove-asset");
       const ri = e.target.getAttribute("data-remove-income");
+      const re = e.target.getAttribute("data-remove-extra");
       if (ra) {
         AppState.assets = AppState.assets.filter((x) => x.id !== num(ra));
         renderAssets();
@@ -2711,8 +2995,14 @@
         renderIncomes();
         scheduleDeterministic();
       }
+      if (re) {
+        AppState.extras = currentExtras().filter((x) => x.id !== num(re));
+        renderExtras();
+        scheduleDeterministic();
+      }
     });
   }
+
 
   function renderPlanHint() {
     const el = document.getElementById("planHint");
@@ -2728,7 +3018,18 @@
       ? "Withdrawals start this year (retirement age is at or below your current age)."
       : "Withdrawals start at age " + a.retireAge + " (" + (a.retireAge - a.currentAge) + " years from now).";
     el.textContent = startText + " The plan runs " + years + " years, to age " + a.horizonAge + ".";
+    renderRealReturnHint();
     renderHistFromHint(a);
+  }
+
+  function renderRealReturnHint() {
+    const el = document.getElementById("realReturnHint");
+    if (!el) return;
+    const a = assumptions();
+    const realPct = realReturn(a.expReturn, a.inflation) * 100;
+    el.textContent = "Real expected return after " + a.inflation + "% inflation: " +
+      realPct.toFixed(2) + "% a year. The net withdrawal stays " + gbp(a.spend) +
+      " in today’s pounds — inflation does not raise that line. It only changes how long pots last.";
   }
 
   function renderHistFromHint(a) {
@@ -3129,17 +3430,91 @@
     }
   }
 
+  function guaranteedIncomeAtAge(incomes, age, currentAge, inflationPct) {
+    const yearsFromNow = age - currentAge;
+    let total = 0;
+    for (const inc of incomes || []) {
+      if (age < num(inc.startAge)) continue;
+      total += incomeAmountReal(inc, yearsFromNow, inflationPct);
+    }
+    return total;
+  }
+
+  function coverageMilestoneAges(a, incomes) {
+    const start = Math.max(a.currentAge, a.retireAge);
+    const ages = new Set();
+    if (start <= a.horizonAge) ages.add(start);
+    for (const inc of incomes || []) {
+      const s = Math.round(num(inc.startAge));
+      if (s >= start && s <= a.horizonAge) ages.add(s);
+    }
+    return Array.from(ages).sort((x, y) => x - y).slice(0, 4);
+  }
+
+  function renderPlanInsights(path) {
+    const covEl = document.getElementById("kpiCoverage");
+    const covNote = document.getElementById("kpiCoverageNote");
+    const taxEl = document.getElementById("kpiLifetimeTax");
+    const taxNote = document.getElementById("kpiLifetimeTaxNote");
+    if (!covEl || !taxEl) return;
+    const a = assumptions();
+    const incomes = AppState.incomes || [];
+    const extras = currentExtras();
+    if (!incomes.length) {
+      covEl.textContent = "No guaranteed income — the whole " + gbp(a.spend) + " net withdrawal comes from pots.";
+    } else {
+      const lines = coverageMilestoneAges(a, incomes).map(function (age) {
+        const g = guaranteedIncomeAtAge(incomes, age, a.currentAge, a.inflation);
+        const pct = a.spend > 0 ? Math.round((g / a.spend) * 100) : 0;
+        return "Age " + age + ": " + gbp(g) + " of " + gbp(a.spend) + " (" + pct + "%)";
+      });
+      covEl.textContent = lines.join(" · ");
+    }
+    if (covNote) {
+      covNote.textContent = incomes.length
+        ? "Guaranteed income as a share of the yearly net withdrawal. The rest still comes from pots."
+        : "Add a State Pension or other income on Inputs to see coverage.";
+    }
+
+    let lifetimeTax = 0;
+    const breakdowns = path && path.breakdowns ? path.breakdowns : [];
+    const ages = path && path.ages ? path.ages : [];
+    for (let i = 0; i < breakdowns.length; i++) {
+      if (ages[i] < a.retireAge) continue;
+      lifetimeTax += Math.max(0, breakdowns[i].tax || 0);
+    }
+    taxEl.textContent = gbp(lifetimeTax);
+    taxEl.className = "kpi-value mt-2 text-3xl font-semibold " + (lifetimeTax > 0.5 ? "text-ink-900" : "text-slate-400");
+    const extraSum = extrasTotalBetween(extras, Math.max(a.currentAge, a.retireAge), a.horizonAge);
+    if (taxNote) {
+      if (extraSum > 0.5) {
+        const pots = extras.filter(function (x) { return num(x.amount) > 0; }).map(function (x) {
+          return EXTRA_SOURCES[extraSource(x)];
+        });
+        const unique = pots.filter(function (name, i) { return pots.indexOf(name) === i; });
+        taxNote.textContent = "UK income tax on this path · planned extras add " + gbp(extraSum) +
+          " from " + unique.join(" · ");
+      } else {
+        taxNote.textContent = "UK income tax on the expected-return path · no planned extras";
+      }
+    }
+  }
+
   function renderResultsSummary() {
     const el = document.getElementById("resultsPlanSummary");
     if (!el) return;
     const a = assumptions();
+    const extraN = currentExtras().filter((x) => num(x.amount) > 0).length;
     const line =
       "Age " + a.currentAge +
       " · retire " + a.retireAge +
       " · horizon " + a.horizonAge +
       " · net withdrawal " + gbp(a.spend) +
+      " · inflation " + a.inflation + "%" +
+      " · real return " + (realReturn(a.expReturn, a.inflation) * 100).toFixed(1) + "%" +
       " · success target " + successLabel(a.targetSuccess) +
       (a.histFromYear > HIST_MARKET.startYear ? " · hist from " + a.histFromYear : "") +
+      (extraN ? " · " + extraN + " planned extra" + (extraN === 1 ? "" : "s") : "") +
       " · pots " + gbp(todayPotGbp());
     el.textContent = line;
     const printMeta = document.getElementById("printMeta");
@@ -3150,8 +3525,15 @@
 
   function resizeResultCharts() {
     requestAnimationFrame(function () {
-      if (percentileChart) percentileChart.resize();
-      if (incomeChart) incomeChart.resize();
+      requestAnimationFrame(function () {
+        if (lastDetPath && currentPage === "results") {
+          const a = assumptions();
+          renderIncomeChart(lastDetPath.ages, lastDetPath.breakdowns, a.retireAge, a.spend);
+          renderIncomeAllocNote(lastDetPath.ages, lastDetPath.breakdowns, a.retireAge);
+        }
+        if (percentileChart) percentileChart.resize();
+        if (incomeChart) incomeChart.resize();
+      });
     });
   }
 
@@ -3181,6 +3563,7 @@
     if (currentPage === "start") renderStartMeta();
     if (currentPage === "results") {
       renderResultsSummary();
+      renderPlanInsights(lastDetPath);
       resizeResultCharts();
     }
     updateSimChrome();
@@ -3282,9 +3665,11 @@
     loadPersisted();
     renderAssets();
     renderIncomes();
+    renderExtras();
     renderOrder();
     bindList("assetList", "asset");
     bindList("incomeList", "income");
+    bindList("extraList", "extra");
 
     document.getElementById("resetDemoBtn").addEventListener("click", () => {
       if (!confirm("Replace your current plan with the demo defaults? The numbers saved in this browser will be overwritten.")) return;
@@ -3309,6 +3694,12 @@
       const type = document.getElementById("addIncomeType").value;
       AppState.incomes.push(defaultIncome(type));
       renderIncomes();
+      scheduleDeterministic();
+    });
+    document.getElementById("addExtraBtn").addEventListener("click", () => {
+      if (currentExtras().length >= MAX_EXTRAS) return;
+      AppState.extras.push(defaultExtra());
+      renderExtras();
       scheduleDeterministic();
     });
     ["currentAge", "retireAge", "horizonAge", "spend", "inflation", "expReturn", "volatility", "targetSuccess", "histFromYear"].forEach((id) => {
